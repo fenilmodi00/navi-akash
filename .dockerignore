@@ -1,0 +1,50 @@
+# Git
+.git
+**/.git
+
+# Retain gitmodules for submodule information
+!.gitmodules
+
+# Node.js
+**/node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+**/*.log
+**/bun.lock
+**/package-lock.json
+
+# Don't ignore the plugin directories themselves
+!plugin-discord/
+!plugin-akash-chat/
+
+# Build files
+**/dist
+**/.next
+
+# Development and data files - explicitly exclude these directories
+elizadb/
+data/
+generatedImages/
+akash/
+
+# Docker
+.dockerignore
+
+# Misc
+.DS_Store
+**/.DS_Store
+*.swp
+*.tmp
+README.md
+project-structure.txt
+.env.example
+
+# Editor directories and files
+.idea/
+.vscode/
+**/*.suo
+**/*.ntvs*
+**/*.njsproj
+**/*.sln
+**/*.sw?

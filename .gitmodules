@@ -1,0 +1,6 @@
+[submodule "plugin-akash-chat"]
+	path = plugin-akash-chat
+	url = https://github.com/fenilmodi00/plugin-akash-chat.git
+[submodule "akash"]
+	path = akash
+	url = https://github.com/fenilmodi00/plugin-akash-chat
