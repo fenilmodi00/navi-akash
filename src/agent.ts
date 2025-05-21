@@ -2,14 +2,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import type { Character } from '@elizaos/core';
-import { ragPlugin } from '@/plugin-rag';
+import { ragPlugin } from './plugin-rag';
 //import { groqPlugin } from '@/plugin-groq';
 // import { openaiPlugin } from '@elizaos/plugin-openai';
-import { akashchatPlugin } from '@elizaos/plugin-akash-chat';
-import discordPlugin from '../plugin-discord/src/index';
-
+import akashchatPlugin from '@elizaos/plugin-akash-chat';
 /**
- * A character object representing Eddy, a developer support agent for ElizaOS.
+ * A character object representing Navi, a developer support agent for Akash Network.
  */
 const character: Partial<Character> = {
   name: 'Navi',
