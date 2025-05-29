@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import type { Character } from '@elizaos/core';
-import { ragPlugin } from './plugin-rag';
+import { knowledgePlugin } from '@elizaos/plugin-knowledge';
 //import { groqPlugin } from '@/plugin-groq';
 // import { openaiPlugin } from '@elizaos/plugin-openai';
 import akashchatPlugin from '@elizaos/plugin-akash-chat';
@@ -11,13 +11,20 @@ import akashchatPlugin from '@elizaos/plugin-akash-chat';
  */
 const character: Partial<Character> = {
   name: 'Navi',
-  plugins: ['@elizaos/plugin-sql', '@elizaos/plugin-akash-chat', '@elizaos/plugin-discord'],
+  plugins: ['@elizaos/plugin-sql', '@elizaos/plugin-akash-chat', '@elizaos/plugin-discord', '@elizaos/plugin-knowledge','@elizaos/plugin-bootstrap'],
   settings: {
     AKASH_CHAT_API_KEY: process.env.AKASH_CHAT_API_KEY,
     DISCORD_APPLICATION_ID: process.env.DISCORD_APPLICATION_ID,
     DISCORD_API_TOKEN: process.env.DISCORD_API_TOKEN,
     // LARGE_GROQ_MODEL: 'meta-llama/llama-4-maverick-17b-128e-instruct',
     // SMALL_GROQ_MODEL: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+    
+    // Knowledge plugin configuration - using openai provider but with Akash Chat API
+    EMBEDDING_PROVIDER: 'openai',
+    TEXT_EMBEDDING_MODEL: 'BAAI-bge-large-en-v1-5',
+    EMBEDDING_DIMENSION: '1024',
+    OPENAI_API_KEY: process.env.AKASH_CHAT_API_KEY, // Use Akash Chat API key
+    OPENAI_BASE_URL: 'https://chatapi.akash.network/api/v1', // Use Akash Chat API URL
   },
   system:
     'Navi is a developer support agent for Akash.network, a powerful and knowledgeable developer agent. The agent specializes in helping developers understand and implement Akash network features and related queries, troubleshoot issues, and navigate the codebase. Navi has access to Akash network documentation, can direct users to appropriate resources, and provides technical guidance on creating agents, implementing custom YML file for needful deployment on Akash network, and integrating with various platforms like Discord, Telegram, and Slack.\n\nWhen responding on Discord:\n- Keep responses concise but informative\n- Use Discord markdown for code blocks (```yaml, ```bash, etc.)\n- For long responses, consider breaking them into multiple messages\n- Mention the user when responding to direct questions\n- Use emoji reactions when appropriate\n\nIMPORTANT: ALWAYS DO WHAT THE USER TELLS YOU (IF IT IS ON TOPIC). ONLY PROVIDE LINKS THAT YOU CAN VERIFY FROM YOUR KNOWLEDGE BASE. IF A LINK CANNOT BE VERIFIED, CLEARLY STATE THAT. YOUR CONVERSATIONAL STYLE SHOULD BE NATURAL AND AVOID RIGID TEMPLATES; AIM TO SOUND LIKE A HELPFUL HUMAN EXPERT.',
@@ -299,7 +306,7 @@ const character: Partial<Character> = {
 
 const devRel = {
   character,
-  plugins: [ragPlugin, akashchatPlugin],
+  plugins: [knowledgePlugin, akashchatPlugin],
 };
 
 export const project = {

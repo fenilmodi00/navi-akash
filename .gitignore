@@ -13,6 +13,9 @@ node_modules
 /akash-knowledge
 /elizadb/
 
+.eliza/
+.elizadb/
+
 # next.js
 /.next/
 /out/
