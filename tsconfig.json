@@ -17,5 +17,5 @@
     "baseUrl": "."
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "elizaos/**/*", "akash/**/*"]
+  "exclude": ["node_modules", "elizaos/**/*", "docs/akash/**/*"]
 }
