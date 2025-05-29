@@ -5,15 +5,15 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    container_name: navi-discord-bot
+    container_name: navi-akash-bot
     restart: unless-stopped
     env_file:
       - .env
     volumes:
       - ./data:/app/data
-      # elizadb is not mounted from host as it's excluded from version control
+      - ./generatedImages:/app/generatedImages
     healthcheck:
-      test: ["CMD", "node", "-e", "process.exit(process.exitCode)"]
+      test: ["CMD", "bun", "-e", "process.exit(process.exitCode)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -26,4 +26,5 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G 
+          memory: 2G
+          cpus: '1' 
