@@ -86,4 +86,10 @@ temp
 # Generated images
 generatedImages/
 
+# Don't ignore plugin directories
+!plugins/plugin-discord/
+!plugins/plugin-web-search/
+!plugins/plugin-akash-chat/
+!plugins/plugin-knowledge/
+
 
