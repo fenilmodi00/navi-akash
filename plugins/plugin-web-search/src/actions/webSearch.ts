@@ -36,19 +36,67 @@ const isTwitterSource = (url: string): boolean => {
     return url.includes('twitter.com') || url.includes('x.com');
 };
 
+// Check if a URL is from a special topic (curated content)
+const isSpecialTopicURL = (url: string): boolean => {
+    // These URLs correspond to the curated links in AKASH_SPECIAL_TOPICS
+    const specialURLs = [
+        // Accelerate
+        'akash.network/accelerate/',
+        'akash.network/blog/akash-accelerate',
+        'github.com/akash-network/community/tree/main/sig-events/akash-accelerate',
+        
+        // Supercloud
+        'akash.network/docs/deployments/akash-console/',
+        'akash.network/blog/ai-supercloud/',
+        
+        // GPU
+        'akash.network/docs/deployments/akash-console/gpu-deployment/',
+        'akash.network/docs/providers/gpu-providers/',
+        'akash.network/marketplace/',
+        
+        // Pricing
+        'akash.network/pricing/',
+        'akash.network/about/cloud-cost-calculator/',
+        
+        // Provider
+        'akash.network/docs/providers/',
+        'akash.network/docs/providers/build-a-cloud-provider/',
+        'akash.network/docs/providers/provider-rewards/',
+        
+        // Mainnet
+        'akash.network/docs/mainnet/',
+        'github.com/akash-network/node/releases',
+        
+        // Validator
+        'akash.network/docs/validators/',
+        'akash.network/docs/validators/validator-deployment-guide/'
+    ];
+    return specialURLs.some(specialURL => url.includes(specialURL));
+};
+
 // Helper function to format search results in a more readable way
 function formatSearchResults(results: SearchResult[]): string {
     if (!results || results.length === 0) {
         return "I couldn't find any relevant information.";
     }
     
-    // Separate Twitter results from other results
-    const twitterResults = results.filter(result => isTwitterSource(result.url));
-    const otherResults = results.filter(result => !isTwitterSource(result.url));
+    // Separate results by type
+    const specialTopicResults = results.filter(result => isSpecialTopicURL(result.url));
+    const twitterResults = results.filter(result => isTwitterSource(result.url) && !isSpecialTopicURL(result.url));
+    const otherResults = results.filter(result => !isTwitterSource(result.url) && !isSpecialTopicURL(result.url));
     
     let formattedOutput = '';
     
-    // Format Twitter results first if they exist
+    // Format special topic results first if they exist
+    if (specialTopicResults.length > 0) {
+        formattedOutput += "### Official Documentation\n\n";
+        
+        specialTopicResults.forEach((result) => {
+            formattedOutput += `**[${result.title}](${result.url})**\n${result.content}\n\n`;
+        });
+    }
+    
+    // Format Twitter results next if they exist
     if (twitterResults.length > 0) {
         formattedOutput += "### Recent Twitter Updates\n\n";
         
@@ -79,21 +127,25 @@ function formatSearchResults(results: SearchResult[]): string {
             
             formattedOutput += `**[@${username}${date}](${result.url})**\n${content}\n\n`;
         });
-        
-        formattedOutput += "### Other Resources\n\n";
     }
     
     // Format other results
-    otherResults.forEach((result, index) => {
-        // Extract domain from URL for better readability
-        const urlObj = new URL(result.url);
-        const domain = urlObj.hostname;
+    if (otherResults.length > 0) {
+        formattedOutput += otherResults.length > 0 && (specialTopicResults.length > 0 || twitterResults.length > 0) 
+            ? "### Other Resources\n\n" 
+            : "";
         
-        // Format the content to be more readable
-        const content = result.content.substring(0, 200).trim() + (result.content.length > 200 ? '...' : '');
-        
-        formattedOutput += `**${index + 1}. [${result.title}](${result.url})** (${domain})\n${content}\n\n`;
-    });
+        otherResults.forEach((result, index) => {
+            // Extract domain from URL for better readability
+            const urlObj = new URL(result.url);
+            const domain = urlObj.hostname;
+            
+            // Format the content to be more readable
+            const content = result.content.substring(0, 200).trim() + (result.content.length > 200 ? '...' : '');
+            
+            formattedOutput += `**${index + 1}. [${result.title}](${result.url})** (${domain})\n${content}\n\n`;
+        });
+    }
     
     return formattedOutput;
 }

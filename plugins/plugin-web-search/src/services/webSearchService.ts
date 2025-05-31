@@ -27,6 +27,130 @@ const SOCIAL_MEDIA_DOMAINS = [
     'medium.com'
 ];
 
+// Special events/topics with dedicated documentation links
+const AKASH_SPECIAL_TOPICS = {
+    "accelerate": {
+        name: "Akash Accelerate",
+        links: [
+            {
+                title: "Akash Accelerate Event Page",
+                url: "https://akash.network/accelerate/",
+                description: "Official event page for Akash Accelerate with details about upcoming events, speakers, and registration."
+            },
+            {
+                title: "Akash Accelerate 2024 Recap",
+                url: "https://akash.network/blog/akash-accelerate-2024-recap/",
+                description: "A comprehensive recap of the Akash Accelerate 2024 event, including presentations, announcements, and highlights."
+            },
+            {
+                title: "Akash Accelerate GitHub Resources",
+                url: "https://github.com/akash-network/community/tree/main/sig-events/akash-accelerate",
+                description: "GitHub repository with resources, slides, and materials from previous Akash Accelerate events."
+            }
+        ]
+    },
+    "supercloud": {
+        name: "Akash Supercloud",
+        links: [
+            {
+                title: "Akash Supercloud Documentation",
+                url: "https://akash.network/docs/deployments/akash-console/",
+                description: "Official documentation for Akash Supercloud features and deployment options."
+            },
+            {
+                title: "Akash AI Supercloud Blog",
+                url: "https://akash.network/blog/ai-supercloud/",
+                description: "Blog post explaining the Akash AI Supercloud concept and its benefits."
+            }
+        ]
+    },
+    "gpu": {
+        name: "Akash GPU",
+        links: [
+            {
+                title: "GPU Deployments on Akash",
+                url: "https://akash.network/docs/deployments/akash-console/gpu-deployment/",
+                description: "Official documentation for deploying GPU workloads on Akash Network."
+            },
+            {
+                title: "GPU Provider Operations",
+                url: "https://akash.network/docs/providers/gpu-providers/",
+                description: "Documentation for GPU providers on Akash Network."
+            },
+            {
+                title: "Akash GPU Marketplace",
+                url: "https://akash.network/marketplace/",
+                description: "Akash GPU marketplace for finding available GPU providers and pricing."
+            }
+        ]
+    },
+    "pricing": {
+        name: "Akash Pricing",
+        links: [
+            {
+                title: "Akash Network Pricing",
+                url: "https://akash.network/pricing/",
+                description: "Official pricing information for Akash Network services."
+            },
+            {
+                title: "Akash Network Cost Calculator",
+                url: "https://akash.network/about/cloud-cost-calculator/",
+                description: "Tool to calculate and compare costs between Akash and traditional cloud providers."
+            }
+        ]
+    },
+    "provider": {
+        name: "Akash Providers",
+        links: [
+            {
+                title: "Provider Documentation",
+                url: "https://akash.network/docs/providers/",
+                description: "Comprehensive documentation for Akash Network providers."
+            },
+            {
+                title: "Provider Setup Guide",
+                url: "https://akash.network/docs/providers/build-a-cloud-provider/",
+                description: "Step-by-step guide for setting up and running an Akash provider."
+            },
+            {
+                title: "Provider Rewards",
+                url: "https://akash.network/docs/providers/provider-rewards/",
+                description: "Information about the provider rewards program on Akash Network."
+            }
+        ]
+    },
+    "mainnet": {
+        name: "Akash Mainnet",
+        links: [
+            {
+                title: "Mainnet Documentation",
+                url: "https://akash.network/docs/mainnet/",
+                description: "Official documentation for Akash Mainnet including upgrade information."
+            },
+            {
+                title: "Mainnet Release Notes",
+                url: "https://github.com/akash-network/node/releases",
+                description: "Release notes and changelog for Akash Network mainnet versions."
+            }
+        ]
+    },
+    "validator": {
+        name: "Akash Validators",
+        links: [
+            {
+                title: "Validator Documentation",
+                url: "https://akash.network/docs/validators/",
+                description: "Comprehensive documentation for Akash Network validators."
+            },
+            {
+                title: "Validator Setup Guide",
+                url: "https://akash.network/docs/validators/validator-deployment-guide/",
+                description: "Step-by-step guide for setting up and running an Akash validator."
+            }
+        ]
+    }
+};
+
 // Helper function to check if a URL is from an official Akash source
 const isAkashOfficialSource = (url: string): boolean => {
     return AKASH_OFFICIAL_DOMAINS.some(domain => url.includes(domain));
@@ -60,6 +184,46 @@ const isRecentUpdatesQuery = (query: string): boolean => {
     
     const queryLower = query.toLowerCase();
     return updateTerms.some(term => queryLower.includes(term));
+};
+
+// Helper function to check if a query is about a special topic
+const getSpecialTopicFromQuery = (query: string): {name: string, links: any[]} | null => {
+    const queryLower = query.toLowerCase();
+    
+    // Special cases for common synonyms and related terms
+    if (queryLower.includes("cost") || queryLower.includes("price") || 
+        queryLower.includes("expensive") || queryLower.includes("cheap") ||
+        queryLower.includes("budget") || queryLower.includes("fee")) {
+        return AKASH_SPECIAL_TOPICS["pricing"];
+    }
+    
+    if (queryLower.includes("graphic") || queryLower.includes("cuda") || 
+        queryLower.includes("video card") || queryLower.includes("nvidia") ||
+        queryLower.includes("amd") || queryLower.includes("ml") || 
+        queryLower.includes("machine learning") || queryLower.includes("ai compute")) {
+        return AKASH_SPECIAL_TOPICS["gpu"];
+    }
+    
+    if (queryLower.includes("become provider") || queryLower.includes("run provider") ||
+        queryLower.includes("set up provider") || queryLower.includes("create provider") ||
+        queryLower.includes("hosting provider") || queryLower.includes("provide resources")) {
+        return AKASH_SPECIAL_TOPICS["provider"];
+    }
+    
+    if (queryLower.includes("run validator") || queryLower.includes("become validator") ||
+        queryLower.includes("validator node") || queryLower.includes("staking") ||
+        queryLower.includes("validate")) {
+        return AKASH_SPECIAL_TOPICS["validator"];
+    }
+    
+    // Standard matching against topics
+    for (const [key, value] of Object.entries(AKASH_SPECIAL_TOPICS)) {
+        if (queryLower.includes(key)) {
+            return value;
+        }
+    }
+    
+    return null;
 };
 
 export class WebSearchService extends Service implements IWebSearchService {
@@ -98,6 +262,9 @@ export class WebSearchService extends Service implements IWebSearchService {
         options?: SearchOptions,
     ): Promise<SearchResponse> {
         try {
+            // Check if this query is about a special topic
+            const specialTopic = getSpecialTopicFromQuery(query);
+            
             // Enhance query with Akash-specific terms if needed
             const enhancedQuery = enhanceAkashQuery(query);
             elizaLogger.log(`Original query: "${query}" | Enhanced query: "${enhancedQuery}"`);
@@ -154,8 +321,21 @@ export class WebSearchService extends Service implements IWebSearchService {
                 days: options?.days || 7,
             });
             
+            // Create special topic results if applicable
+            let specialTopicResults: any[] = [];
+            if (specialTopic) {
+                specialTopicResults = specialTopic.links.map(link => ({
+                    title: link.title,
+                    url: link.url,
+                    content: link.description,
+                    score: 1.0, // Give these results high score
+                    publishedDate: new Date().toISOString() // Current date since these are curated
+                }));
+            }
+            
             // Combine and prioritize results
             const combinedResults = this.combineAndPrioritizeResults(
+                specialTopicResults,
                 docsResponse.results || [],
                 twitterResponse.results || [],
                 generalResponse.results || [],
@@ -164,6 +344,13 @@ export class WebSearchService extends Service implements IWebSearchService {
             
             // For social media focused queries, provide a more tailored answer
             let answer = generalResponse.answer || "";
+            
+            // If it's a special topic, enhance the answer
+            if (specialTopic) {
+                answer = `${answer}\n\nI've included official documentation links for ${specialTopic.name} below.`;
+            }
+            
+            // If it's an update query with Twitter results, enhance the answer
             if (isUpdateQuery && twitterResponse.results && twitterResponse.results.length > 0) {
                 // Include Twitter info in the answer even without dates
                 const tweetCount = twitterResponse.results.length;
@@ -202,6 +389,7 @@ export class WebSearchService extends Service implements IWebSearchService {
     
     // Helper method to combine and prioritize results from different searches
     private combineAndPrioritizeResults(
+        specialTopicResults: any[], 
         docsResults: any[], 
         twitterResults: any[], 
         generalResults: any[],
@@ -211,11 +399,19 @@ export class WebSearchService extends Service implements IWebSearchService {
         const includedUrls = new Map();
         const combinedResults = [];
         
-        // For update queries, prioritize Twitter results first
+        // Special topic results have the highest priority
+        for (const result of specialTopicResults) {
+            includedUrls.set(result.url, true);
+            combinedResults.push(result);
+        }
+        
+        // For update queries, prioritize Twitter results next
         if (isUpdateQuery && twitterResults.length > 0) {
             for (const result of twitterResults) {
-                includedUrls.set(result.url, true);
-                combinedResults.push(result);
+                if (!includedUrls.has(result.url)) {
+                    includedUrls.set(result.url, true);
+                    combinedResults.push(result);
+                }
             }
         }
         
