@@ -11,7 +11,7 @@ import { WebSearchService } from "../services/webSearchService";
 import type { SearchResult } from "../types";
 
 const DEFAULT_MAX_WEB_SEARCH_TOKENS = 4000;
-const DEFAULT_MODEL_ENCODING = "gpt-3.5-turbo";
+const DEFAULT_MODEL_ENCODING = "gpt-4-turbo";
 
 function getTotalTokensFromString(
     str: string,
@@ -29,6 +29,73 @@ function MaxTokens(
         return data.slice(0, maxTokens);
     }
     return data;
+}
+
+// Check if a URL is from Twitter/X
+const isTwitterSource = (url: string): boolean => {
+    return url.includes('twitter.com') || url.includes('x.com');
+};
+
+// Helper function to format search results in a more readable way
+function formatSearchResults(results: SearchResult[]): string {
+    if (!results || results.length === 0) {
+        return "I couldn't find any relevant information.";
+    }
+    
+    // Separate Twitter results from other results
+    const twitterResults = results.filter(result => isTwitterSource(result.url));
+    const otherResults = results.filter(result => !isTwitterSource(result.url));
+    
+    let formattedOutput = '';
+    
+    // Format Twitter results first if they exist
+    if (twitterResults.length > 0) {
+        formattedOutput += "### Recent Twitter Updates\n\n";
+        
+        twitterResults.forEach((result, index) => {
+            // Extract username from Twitter URL
+            let username = 'akashnet_'; // Default
+            const usernameMatch = result.url.match(/twitter\.com\/([^\/]+)/) || result.url.match(/x\.com\/([^\/]+)/);
+            if (usernameMatch && usernameMatch[1]) {
+                username = usernameMatch[1];
+            }
+            
+            // Extract date if available - use more flexible patterns
+            let date = '';
+            const dateMatch = result.content.match(/(\d{1,2} [A-Za-z]{3} \d{4})|([A-Za-z]{3} \d{1,2}, \d{4})|(\d{1,2}[hm] ago)|(\d{1,2} hours? ago)|(\d{1,2} days? ago)|(\d{1,2} mins? ago)|(\d{1,2}\/\d{1,2}\/\d{2,4})|((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2})/i);
+            if (dateMatch) {
+                date = ` (${dateMatch[0]})`;
+            }
+            
+            // Format tweet content - clean up common patterns
+            let content = result.content
+                .replace(/http[s]?:\/\/t\.co\/\w+/g, '') // Remove t.co links
+                .replace(/(\d+) replies (\d+) reposts (\d+) likes/gi, '') // Remove metrics
+                .trim();
+                
+            if (content.length > 200) {
+                content = content.substring(0, 200).trim() + '...';
+            }
+            
+            formattedOutput += `**[@${username}${date}](${result.url})**\n${content}\n\n`;
+        });
+        
+        formattedOutput += "### Other Resources\n\n";
+    }
+    
+    // Format other results
+    otherResults.forEach((result, index) => {
+        // Extract domain from URL for better readability
+        const urlObj = new URL(result.url);
+        const domain = urlObj.hostname;
+        
+        // Format the content to be more readable
+        const content = result.content.substring(0, 200).trim() + (result.content.length > 200 ? '...' : '');
+        
+        formattedOutput += `**${index + 1}. [${result.title}](${result.url})** (${domain})\n${content}\n\n`;
+    });
+    
+    return formattedOutput;
 }
 
 export const webSearch: Action = {
@@ -70,131 +137,175 @@ export const webSearch: Action = {
 
         const webSearchService = new WebSearchService();
         await webSearchService.initialize(runtime);
-        const searchResponse = await webSearchService.search(
-            webSearchPrompt,
-        );
-
-        if (searchResponse && searchResponse.results.length) {
-            const responseList = searchResponse.answer
-                ? `${searchResponse.answer}${
-                      Array.isArray(searchResponse.results) &&
-                      searchResponse.results.length > 0
-                          ? `\n\nFor more details, you can check out these resources:\n${searchResponse.results
-                                .map(
-                                    (result: SearchResult, index: number) =>
-                                        `${index + 1}. [${result.title}](${result.url})`
-                                )
-                                .join("\n")}`
-                          : ""
-                  }`
-                : "";
-
+        
+        try {
+            const searchResponse = await webSearchService.search(
+                webSearchPrompt,
+            );
+            
+            if (searchResponse && searchResponse.results.length) {
+                // Check if we have an answer from the API
+                const answer = searchResponse.answer 
+                    ? `${searchResponse.answer}\n\n` 
+                    : "Here's what I found about your query:\n\n";
+                
+                // Format the results in a readable way
+                const formattedResults = formatSearchResults(searchResponse.results);
+                
+                // Check if we have Twitter results
+                const hasTwitterResults = searchResponse.results.some(result => 
+                    isTwitterSource(result.url)
+                );
+                
+                // Combine the answer and results
+                let disclaimer = "This information is based on web search results and may need verification from official Akash sources.";
+                if (hasTwitterResults) {
+                    disclaimer += " Tweet content is from the official Akash Network Twitter account.";
+                }
+                
+                const responseText = `${answer}${formattedResults}\n\n${disclaimer}`;
+                
+                callback({
+                    text: MaxTokens(responseText, DEFAULT_MAX_WEB_SEARCH_TOKENS),
+                });
+            } else {
+                elizaLogger.error("search failed or returned no data.");
+                callback({
+                    text: "I couldn't find any relevant information about your query. Please try rephrasing your question or ask about a different topic related to Akash Network."
+                });
+            }
+        } catch (error) {
+            elizaLogger.error("Error during web search:", error);
             callback({
-                text: MaxTokens(responseList, DEFAULT_MAX_WEB_SEARCH_TOKENS),
+                text: "I encountered an error while searching for information. Please try again later or rephrase your question."
             });
-        } else {
-            elizaLogger.error("search failed or returned no data.");
         }
     },
     examples: [
         [
             {
-                user: "{{user1}}",
+                name: '{{name1}}',
                 content: {
                     text: "Find the latest news about SpaceX launches.",
                 },
             },
             {
-                user: "{{agentName}}",
+                name: '{{name2}}',
                 content: {
                     text: "Here is the latest news about SpaceX launches:",
-                    action: "WEB_SEARCH",
+                    actions: ["WEB_SEARCH"],
                 },
             },
         ],
         [
             {
-                user: "{{user1}}",
+                name: '{{name1}}',
                 content: {
                     text: "Can you find details about the iPhone 16 release?",
                 },
             },
             {
-                user: "{{agentName}}",
+                name: '{{name2}}',
                 content: {
                     text: "Here are the details I found about the iPhone 16 release:",
-                    action: "WEB_SEARCH",
+                    actions: ["WEB_SEARCH"],
                 },
             },
         ],
         [
             {
-                user: "{{user1}}",
+                name: '{{name1}}',
                 content: {
                     text: "What is the schedule for the next FIFA World Cup?",
                 },
             },
             {
-                user: "{{agentName}}",
+                name: '{{name2}}',
                 content: {
                     text: "Here is the schedule for the next FIFA World Cup:",
-                    action: "WEB_SEARCH",
+                    actions: ["WEB_SEARCH"],
                 },
             },
         ],
         [
             {
-                user: "{{user1}}",
+                name: '{{name1}}',
                 content: { text: "Check the latest stock price of Tesla." },
             },
             {
-                user: "{{agentName}}",
+                name: '{{name2}}',
                 content: {
                     text: "Here is the latest stock price of Tesla I found:",
-                    action: "WEB_SEARCH",
+                    actions: ["WEB_SEARCH"],
                 },
             },
         ],
         [
             {
-                user: "{{user1}}",
+                name: '{{name1}}',
                 content: {
                     text: "What are the current trending movies in the US?",
                 },
             },
             {
-                user: "{{agentName}}",
+                name: '{{name2}}',
                 content: {
                     text: "Here are the current trending movies in the US:",
-                    action: "WEB_SEARCH",
+                    actions: ["WEB_SEARCH"],
                 },
             },
         ],
         [
             {
-                user: "{{user1}}",
+                name: '{{name1}}',
                 content: {
                     text: "What is the latest score in the NBA finals?",
                 },
             },
             {
-                user: "{{agentName}}",
+                name: '{{name2}}',
                 content: {
                     text: "Here is the latest score from the NBA finals:",
-                    action: "WEB_SEARCH",
+                    actions: ["WEB_SEARCH"],
                 },
             },
         ],
         [
             {
-                user: "{{user1}}",
+                name: '{{name1}}',
                 content: { text: "When is the next Apple keynote event?" },
             },
             {
-                user: "{{agentName}}",
+                name: '{{name2}}',
                 content: {
                     text: "Here is the information about the next Apple keynote event:",
-                    action: "WEB_SEARCH",
+                    actions: ["WEB_SEARCH"],
+                },
+            },
+        ],
+        [
+            {
+                name: '{{name1}}',
+                content: { text: "What are the latest updates about Akash Network?" },
+            },
+            {
+                name: '{{name2}}',
+                content: {
+                    text: "Let me search for the latest Akash Network updates for you:",
+                    actions: ["WEB_SEARCH"],
+                },
+            },
+        ],
+        [
+            {
+                name: '{{name1}}',
+                content: { text: "What is Akash Network tweeting about lately?" },
+            },
+            {
+                name: '{{name2}}',
+                content: {
+                    text: "Let me check the recent tweets from Akash Network:",
+                    actions: ["WEB_SEARCH"],
                 },
             },
         ],
