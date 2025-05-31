@@ -205,13 +205,10 @@ export class MessageManager {
           }
 
           try {
-            // Log the message ID we're using for reply
-            logger.info(`Replying to message with ID: ${message.id}`);
-            
             const messages = await sendMessageInChunks(
               channel,
               content.text ?? '',
-              message.id,
+              message.id!,
               files
             );
 

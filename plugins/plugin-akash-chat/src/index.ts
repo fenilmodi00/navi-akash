@@ -126,9 +126,9 @@ function getAkashChatClient(runtime: Runtime): ReturnType<typeof createOpenAI> {
 function getModelName(runtime: Runtime, modelType: ModelTypeName): string {
   switch (modelType) {
     case ModelType.TEXT_SMALL:
-      return getSetting(runtime, 'AKASH_CHAT_SMALL_MODEL', 'Meta-Llama-3-1-8B-Instruct-FP8')!;
+      return getSetting(runtime, 'AKASH_CHAT_SMALL_MODEL') || 'Meta-Llama-3-1-8B-Instruct-FP8';
     default:
-      return getSetting(runtime, 'AKASH_CHAT_LARGE_MODEL', 'Meta-Llama-3-3-70B-Instruct')!;
+      return getSetting(runtime, 'AKASH_CHAT_LARGE_MODEL') || 'Meta-Llama-3-3-70B-Instruct';
   }
 }
 

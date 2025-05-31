@@ -1,6 +1,7 @@
 # Git
 .git
 **/.git
+.gitignore
 
 # Retain gitmodules for submodule information
 !.gitmodules
@@ -15,18 +16,19 @@ yarn-error.log
 **/package-lock.json
 
 # Don't ignore the plugin directories themselves
-!plugin-discord/
-!plugin-akash-chat/
+!plugins/plugin-discord/
+!plugins/plugin-akash-chat/
+!plugins/plugin-knowledge/
+!plugins/plugin-web-search/
 
 # Build files
 **/dist
 **/.next
 
 # Development and data files - explicitly exclude these directories
-elizadb/
+.elizadb/
 data/
 generatedImages/
-akash/
 
 # Docker
 .dockerignore
@@ -39,6 +41,18 @@ akash/
 README.md
 project-structure.txt
 .env.example
+.env
+
+# Test files
+**/__tests__/
+**/test/
+**/tests/
+**/*.test.js
+**/*.test.ts
+**/*.spec.js
+**/*.spec.ts
+vitest.config.ts
+jest.config.js
 
 # Editor directories and files
 .idea/
@@ -48,3 +62,9 @@ project-structure.txt
 **/*.njsproj
 **/*.sln
 **/*.sw?
+
+# Other unnecessary files
+.github/
+.coverage/
+coverage/
+.nyc_output/

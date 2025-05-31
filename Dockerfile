@@ -1,49 +1,110 @@
-FROM oven/bun:1 as base
+FROM oven/bun:1-slim as base
 
+# Set working directory
 WORKDIR /app
 
-# Install git
-RUN apt-get update && apt-get install -y git && apt-get clean
+# Install git and other dependencies, then clean up to reduce image size
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package.json bun.lock ./
 
-# Copy plugin directories
-COPY plugin-discord ./plugin-discord/
-COPY plugin-akash-chat ./plugin-akash-chat/
-COPY plugin-knowledge ./plugin-knowledge/
-
 # Create necessary directories
 RUN mkdir -p data/uploads data/generated generatedImages
 
-# Build each plugin
-WORKDIR /app/plugin-discord
-COPY plugin-discord/package.json plugin-discord/bun.lock ./
+# Copy plugin directories
+COPY plugins/ ./plugins/
+
+# Build stage
+FROM base as builder
+
+# Build plugin-discord
+WORKDIR /app/plugins/plugin-discord
+COPY plugins/plugin-discord/package.json plugins/plugin-discord/bun.lock ./
 RUN bun install
-COPY plugin-discord/ ./
+COPY plugins/plugin-discord/ ./
 RUN bun run build
 
-WORKDIR /app/plugin-akash-chat
-COPY plugin-akash-chat/package.json plugin-akash-chat/bun.lock ./
+# Build plugin-akash-chat
+WORKDIR /app/plugins/plugin-akash-chat
+COPY plugins/plugin-akash-chat/package.json plugins/plugin-akash-chat/bun.lock ./
 RUN bun install
-COPY plugin-akash-chat/ ./
+COPY plugins/plugin-akash-chat/ ./
 RUN bun run build
 
-WORKDIR /app/plugin-knowledge
-COPY plugin-knowledge/package.json plugin-knowledge/bun.lock ./
+# Build plugin-knowledge
+WORKDIR /app/plugins/plugin-knowledge
+COPY plugins/plugin-knowledge/package.json plugins/plugin-knowledge/bun.lock ./
 RUN bun install
-COPY plugin-knowledge/ ./
+COPY plugins/plugin-knowledge/ ./
+RUN bun run build
+
+# Build plugin-web-search
+WORKDIR /app/plugins/plugin-web-search
+COPY plugins/plugin-web-search/package.json plugins/plugin-web-search/bun.lock ./
+RUN bun install
+COPY plugins/plugin-web-search/ ./
 RUN bun run build
 
 # Return to main directory and build the main project
 WORKDIR /app
+RUN bun install
+COPY . .
+RUN bun run build
+
+# Production stage
+FROM base as production
+
+# Copy built artifacts from builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/plugins/plugin-discord/dist ./plugins/plugin-discord/dist
+COPY --from=builder /app/plugins/plugin-akash-chat/dist ./plugins/plugin-akash-chat/dist
+COPY --from=builder /app/plugins/plugin-knowledge/dist ./plugins/plugin-knowledge/dist
+COPY --from=builder /app/plugins/plugin-web-search/dist ./plugins/plugin-web-search/dist
+
+# Install production dependencies only
+COPY package.json bun.lock ./
 RUN bun install --production
 
-# Copy the rest of the application
-COPY . .
+# Copy plugin package.json files for production dependencies
+COPY plugins/plugin-discord/package.json ./plugins/plugin-discord/
+COPY plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
+COPY plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
+COPY plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
 
-# Build the application
-RUN bun run build
+# Install production dependencies for plugins
+WORKDIR /app/plugins/plugin-discord
+RUN bun install --production
+WORKDIR /app/plugins/plugin-akash-chat
+RUN bun install --production
+WORKDIR /app/plugins/plugin-knowledge
+RUN bun install --production
+WORKDIR /app/plugins/plugin-web-search
+RUN bun install --production
+
+# Return to main directory
+WORKDIR /app
+
+# Create data directories
+RUN mkdir -p data/uploads data/generated generatedImages
+
+# Set up healthcheck using our custom script
+COPY src/healthcheck.ts ./healthcheck.ts
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD ["bun", "run", "healthcheck.ts"]
+
+# Set environment variables
+ENV NODE_ENV=production
+
+# Set non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 bunjs && \
+    chown -R bunjs:nodejs /app
+
+USER bunjs
 
 # Start the application
 CMD ["bun", "run", "start"] 

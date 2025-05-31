@@ -1,7 +1,7 @@
 {
-  "name": "Navi-Discord",
+  "name": "navi-akash",
   "description": "Discord bot for Akash Network powered by elizaOS",
-  "version": "1.0.0-beta.49",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
   "main": "dist/agent.js",
@@ -22,45 +22,52 @@
   "dependencies": {
     "@elizaos/cli": "^1.0.0-beta.76",
     "@elizaos/core": "^1.0.0-beta.76",
-    "@elizaos/plugin-akash-chat": "file:./plugin-akash-chat",
+    "@elizaos/plugin-akash-chat": "file:./plugins/plugin-akash-chat",
+    "@elizaos/plugin-discord": "file:./plugins/plugin-discord",
+    "@elizaos/plugin-knowledge": "file:./plugins/plugin-knowledge",
+    "@elizaos/plugin-web-search": "file:./plugins/plugin-web-search",
     "@elizaos/plugin-bootstrap": "^1.0.0-beta.76",
-    "@elizaos/plugin-discord": "file:./plugin-discord",
-    "@elizaos/plugin-knowledge": "^1.0.0-beta.77",
     "@elizaos/plugin-sql": "^1.0.0-beta.76",
-    "@types/dotenv": "^8.2.3",
-    "@types/uuid": "^10.0.0",
-    "concurrently": "^9.1.2",
+    "@tavily/core": "^0.5.3",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
-    "eslint-plugin-path-alias": "^2.1.0",
     "evt": "^2.5.9",
     "ffmpeg-static": "^5.2.0",
     "js-sha1": "^0.7.0",
+    "js-tiktoken": "^1.0.20",
     "uuid": "^11.1.0",
     "zod": "3.24.2"
   },
   "devDependencies": {
-    "tsup": "8.4.0",
-    "prettier": "3.5.3",
-    "vitest": "2.1.5",
-    "@vitest/coverage-v8": "2.1.5",
     "@types/bun": "^1.1.14",
     "@types/node": "^22.15.3",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/parser": "^8.15.0",
+    "@vitest/coverage-v8": "2.1.5",
     "eslint": "^8",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.29.1",
-    "typescript": "^5"
+    "eslint-plugin-path-alias": "^2.1.0",
+    "prettier": "3.5.3",
+    "tsup": "8.4.0",
+    "typescript": "^5",
+    "vitest": "2.1.5"
   },
   "scripts": {
     "start": "tsup && elizaos start",
     "dev": "tsup && elizaos dev",
     "build": "tsup",
-    "lint": "prettier --write ./src",
+    "lint": "eslint ./src --ext .ts,.js",
+    "format": "prettier --write \"./src/**/*.{ts,js}\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "format": "prettier --write ./src",
-    "format:check": "prettier --check ./src"
+    "clean": "rm -rf dist node_modules/.cache",
+    "prepare-release": "bun run clean && bun run build && bun run test",
+    "healthcheck": "bun run src/healthcheck.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
   }
 }

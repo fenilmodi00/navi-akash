@@ -94,7 +94,7 @@ interface DiscordActionRow {
 export async function sendMessageInChunks(
   channel: TextChannel,
   content: string,
-  inReplyTo: string,
+  _inReplyTo: string,
   files: Array<{ attachment: Buffer | string; name: string }>,
   components?: any[]
 ): Promise<DiscordMessage[]> {
@@ -112,11 +112,12 @@ export async function sendMessageInChunks(
           content: message.trim(),
         };
 
-        if (i === 0 && inReplyTo) {
-          // Use more reliable direct reference to message ID
-          logger.info(`Setting up reply reference to message: ${inReplyTo}`);
-          options.reply = inReplyTo;
-        }
+        // if (i === 0 && inReplyTo) {
+        //   // Reply to the specified message for the first chunk
+        //   options.reply = {
+        //     messageReference: inReplyTo,
+        //   };
+        // }
 
         if (i === messages.length - 1 && files && files.length > 0) {
           // Attach files to the last message chunk
