@@ -9,8 +9,7 @@ node_modules
 /coverage
 
 # Ignore specific project folders
-/akash/
-/akash-knowledge
+/data/
 /elizadb/
 
 .eliza/
