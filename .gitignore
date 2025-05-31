@@ -9,7 +9,7 @@ node_modules
 /coverage
 
 # Ignore specific project folders
-/data/
+data/
 /elizadb/
 
 .eliza/
