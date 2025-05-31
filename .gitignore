@@ -85,3 +85,6 @@ temp
 
 # Generated images
 generatedImages/
+
+
+plugins/plugin-discord/
