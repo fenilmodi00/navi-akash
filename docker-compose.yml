@@ -5,15 +5,16 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
+      target: production
     container_name: navi-akash-bot
     restart: unless-stopped
     env_file:
       - .env
     volumes:
-      - ./data:/app/data
-      - ./generatedImages:/app/generatedImages
+      - ./data:/app/data:rw
+      - ./generatedImages:/app/generatedImages:rw
     healthcheck:
-      test: ["CMD", "bun", "-e", "process.exit(process.exitCode)"]
+      test: ["CMD", "bun", "run", "healthcheck.ts"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -27,4 +28,14 @@ services:
       resources:
         limits:
           memory: 2G
-          cpus: '1' 
+          cpus: '1'
+    security_opt:
+      - no-new-privileges:true
+    # Uncomment for production if you want to use a specific network
+    # networks:
+    #   - navi-network
+
+# Uncomment for production if you want to use a specific network
+# networks:
+#   navi-network:
+#     driver: bridge 
