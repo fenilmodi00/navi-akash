@@ -1,20 +1,14 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Debug log to check if this file is being loaded
-
-import type { Character, IAgentRuntime, Memory, Action, State, HandlerCallback } from '@elizaos/core';
+import type { Character, IAgentRuntime, Memory, Action, State, HandlerCallback, ProjectAgent, OnboardingConfig } from '@elizaos/core';
 import { knowledgePlugin } from '@elizaos/plugin-knowledge';
 import { akashchatPlugin } from '@elizaos/plugin-akash-chat';
 import discordPlugin from '@elizaos/plugin-discord';
 import { webSearchPlugin } from '@elizaos/plugin-web-search';
 
-/**
- * Helper function to determine if web search should be used
- * Only searches web for specific types of queries to avoid unnecessary API calls
- */
+// Your existing shouldUseWebSearch function remains the same
 const shouldUseWebSearch = (query: string): boolean => {
-  // Keywords that indicate we should use web search
   const webSearchTriggers = [
     'latest', 'recent', 'news', 'update', 'announcement', 'today', 
     'this week', 'this month', 'roadmap', 'upcoming', 'release', 
@@ -24,15 +18,89 @@ const shouldUseWebSearch = (query: string): boolean => {
     'development', 'launched', 'launching', 'released', 'deployed'
   ];
   
-  // Check if query contains any trigger words
   const queryLower = query.toLowerCase();
   return webSearchTriggers.some(trigger => queryLower.includes(trigger));
 };
 
+
+/**
+ * Akash Network agent configuration settings
+ * These settings allow customization of Navi's behavior for specific environments and use cases
+ */
+const akashConfig: OnboardingConfig = {
+  settings: {
+    AKASH_NETWORK_ENVIRONMENT: {
+      name: 'Network Environment',
+      description: 'Which Akash network should I focus on? (mainnet, testnet, sandbox)',
+      usageDescription: 'Specify the primary Akash network for deployment guidance',
+      required: false,
+      public: true,
+      secret: false,
+      validation: (value: string) => ['mainnet', 'testnet', 'sandbox'].includes(value.toLowerCase()),
+      onSetAction: (value: string) => `I'll now focus on ${value} deployments and provide environment-specific guidance.`,
+    },
+    DEPLOYMENT_EXPERTISE: {
+      name: 'Deployment Specialization',
+      description: 'What type of deployments should I specialize in? (web apps, AI/ML, databases, gaming, etc.)',
+      usageDescription: 'Your primary deployment type helps me provide more targeted SDL examples and best practices',
+      required: false,
+      public: true,
+      secret: false,
+      validation: (value: string) => typeof value === 'string' && value.trim().length > 0,
+      onSetAction: (value: string) => `Perfect! I'll focus on ${value} deployment patterns, SDL configurations, and troubleshooting.`,
+    },
+    PROVIDER_PREFERENCES: {
+      name: 'Provider Preferences',
+      description: 'Any specific Akash provider regions or attributes you prefer?',
+      usageDescription: 'Preferred provider regions, capabilities, or specific provider addresses',
+      required: false,
+      public: false,
+      secret: false,
+      validation: (value: string) => typeof value === 'string' && value.trim().length > 0,
+      onSetAction: (value: string) => `Got it! I'll prioritize providers matching: ${value} in my recommendations.`,
+    },
+    TECHNICAL_LEVEL: {
+      name: 'Technical Experience Level',
+      description: 'What is your experience level with Akash? (beginner, intermediate, advanced)',
+      usageDescription: 'Helps me adjust explanations and provide appropriate level of detail',
+      required: false,
+      public: true,
+      secret: false,
+      validation: (value: string) => ['beginner', 'intermediate', 'advanced'].includes(value.toLowerCase()),
+      onSetAction: (value: string) => `I'll adjust my explanations for ${value} level and provide appropriate detail in my responses.`,
+    },
+    AUTO_WEB_SEARCH: {
+      name: 'Automatic Web Search',
+      description: 'Should I automatically search for latest Akash updates when you ask about recent developments?',
+      usageDescription: 'Enable automatic web search for current Akash ecosystem news',
+      required: false,
+      public: true,
+      secret: false,
+      validation: (value: boolean) => typeof value === 'boolean',
+      onSetAction: (value: boolean) => 
+        value 
+          ? "I'll automatically search the web when you ask about recent Akash developments."
+          : "I'll only use my knowledge base unless you specifically request a web search.",
+    },
+    BUDGET_CONSCIOUS: {
+      name: 'Budget Optimization',
+      description: 'Should I prioritize cost-effective deployment recommendations?',
+      usageDescription: 'Focus on budget-friendly providers and resource optimization',
+      required: false,
+      public: true,
+      secret: false,
+      validation: (value: boolean) => typeof value === 'boolean',
+      onSetAction: (value: boolean) => 
+        value 
+          ? "I'll prioritize cost-effective providers and include resource optimization tips."
+          : "I'll focus on performance and reliability over cost considerations.",
+    },
+  },
+};
 /**
  * A character object representing Navi, a developer support agent for Akash Network.
  */
-const character: Partial<Character> = {
+const character: Character = {
   id: '491ceb7d-2386-0e3d-90bd-2d07e858c61f',
   name: 'Navi',
   username: 'AkashNavi',
@@ -47,9 +115,10 @@ const character: Partial<Character> = {
     AKASH_CHAT_API_KEY: process.env.AKASH_CHAT_API_KEY,
     AKASH_Chat_SMALL_MODEL: process.env.AKASH_Chat_SMALL_MODEL,
     AKASH_Chat_LARGE_MODEL: process.env.AKASH_Chat_LARGE_MODEL,
-    DISCORD_APPLICATION_ID: process.env.DISCORD_APPLICATION_ID,
-    DISCORD_API_TOKEN: process.env.DISCORD_API_TOKEN,
-    
+    secrets: {
+      DISCORD_APPLICATION_ID: process.env.DISCORD_APPLICATION_ID,
+      DISCORD_API_TOKEN: process.env.DISCORD_API_TOKEN,
+    },
     // Web Search plugin configuration
     TAVILY_API_KEY: process.env.TAVILY_API_KEY,
     
@@ -308,13 +377,18 @@ const character: Partial<Character> = {
   ],
 };
 
-const devRel = {
+export const naviAgent: ProjectAgent = {
   character,
   plugins: [knowledgePlugin, akashchatPlugin, discordPlugin, webSearchPlugin],
+  // You can add the config here if you want to use it later
+  // config: akashConfig, // Uncomment when you're ready to use onboarding
 };
 
+// Export the configuration separately so you can use it when needed
+export const naviConfig = akashConfig;
+
 export const project = {
-  agents: [devRel],
+  agents: [naviAgent],
   skipBootstrap: true,
 };
 

@@ -40,8 +40,12 @@ Navi-Akash is a developer support agent for Akash Network that lives and breathe
    cd navi-akash
    ```
 
-2. Install dependencies:
+2. Install dependencies and build the project:
    ```bash
+   # Automated build script (recommended)
+   ./build.sh
+   
+   # Or manually
    bun install
    ```
 
@@ -66,14 +70,43 @@ bun run dev
 Build and run using Docker Compose:
 
 ```bash
+# Use the automated deployment script
+./deploy.sh
+
+# Or manually with Docker Compose
 docker-compose up -d --build
 ```
 
 ### Manual Deployment
 
+#### Using the Provided Scripts (Recommended)
+
+```bash
+# Build all plugins and the main project
+./build.sh
+
+# Start the application
+./start.sh
+```
+
+#### Manual Commands
+
 To build and run the bot for production:
 
 ```bash
+# Build each plugin individually
+cd plugins/plugin-akash-chat
+bun install && bun run build
+cd ../plugin-discord
+bun install && bun run build
+cd ../plugin-knowledge
+bun install && bun run build
+cd ../plugin-web-search
+bun install && bun run build
+cd ../..
+
+# Build and start the main project
+bun install
 bun run build
 bun run start
 ```
@@ -122,6 +155,15 @@ TAVILY_API_KEY=your_tavily_api_key
 - Logs are stored in the Docker container and can be viewed with `docker logs navi-akash-bot`
 - The bot will automatically restart unless explicitly stopped
 - Data is persisted in the `data` and `generatedImages` directories
+
+## Maintenance Scripts
+
+The project includes helpful maintenance scripts:
+
+- `build.sh`: Builds all plugins and the main project
+- `start.sh`: Starts the application and ensures the .env file exists
+- `cleanup.sh`: Removes temporary files and cleans up storage
+- `deploy.sh`: Automates production deployment with Docker
 
 ## Contributing
 
