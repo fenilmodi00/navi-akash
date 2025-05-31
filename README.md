@@ -139,7 +139,7 @@ The following environment variables are required:
 ```
 # Akash Chat API Configuration
 AKASH_CHAT_API_KEY=your_akash_chat_api_key
-AKASH_Chat_SMALL_MODEL=your_small_model_name
+AKASH_CHAT_SMALL_MODEL=your_small_model_name
 AKASH_Chat_LARGE_MODEL=your_large_model_name
 
 # Discord Bot Configuration
