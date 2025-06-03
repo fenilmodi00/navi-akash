@@ -4,8 +4,23 @@ services:
     env: node
     plan: starter
     branch: perf
-    buildCommand: bun run install:all && bun run build:all
-    startCommand: bun start
+    buildCommand: |
+      echo "Starting build process..."
+      bun --version
+      echo "Installing dependencies..."
+      bun install
+      echo "Installing plugin dependencies..."
+      cd plugins/plugin-discord && bun install && bun run build
+      cd ../plugin-akash-chat && bun install && bun run build
+      cd ../plugin-knowledge && bun install && bun run build
+      cd ../plugin-web-search && bun install && bun run build
+      cd ../..
+      echo "Building main application..."
+      bun run build
+      echo "Checking dist folder..."
+      ls -la dist/
+      echo "Build complete!"
+    startCommand: node start.cjs
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
