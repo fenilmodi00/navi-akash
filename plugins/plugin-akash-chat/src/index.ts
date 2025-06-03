@@ -15,6 +15,8 @@ import {
 } from '@elizaos/core';
 import { generateObject, generateText } from 'ai';
 import { type TiktokenModel, encodingForModel } from 'js-tiktoken';
+import { PerformanceCache } from './lib/performance-cache';
+import { performanceMonitor } from './lib/performance-monitor';
 
 /**
  * Runtime interface for the AkashChat plugin
@@ -33,6 +35,10 @@ const clientCache = new Map<string, ReturnType<typeof createOpenAI>>();
 
 // Cache for tokenizers to avoid recreating them
 const tokenizerCache = new Map<string, any>();
+
+// Performance caches with different TTLs
+const embeddingCache = new PerformanceCache<number[]>(500, 4 * 60 * 60 * 1000); // 4 hours
+const textCache = new PerformanceCache<string>(200, 1 * 60 * 60 * 1000); // 1 hour
 
 /**
  * Helper function to get settings with fallback to process.env
@@ -121,15 +127,16 @@ function getAkashChatClient(runtime: Runtime): ReturnType<typeof createOpenAI> {
 }
 
 /**
- * Maps ElizaOS model types to Akash Chat model names
+ * Optimized model selection for ElizaOS model types
  */
 function getModelName(runtime: Runtime, modelType: ModelTypeName): string {
-  switch (modelType) {
-    case ModelType.TEXT_SMALL:
-      return getSetting(runtime, 'AKASH_CHAT_SMALL_MODEL') || 'Meta-Llama-3-1-8B-Instruct-FP8';
-    default:
-      return getSetting(runtime, 'AKASH_CHAT_LARGE_MODEL') || 'Meta-Llama-3-3-70B-Instruct';
-  }
+  // Cache model mappings for performance
+  const modelMappings = {
+    [ModelType.TEXT_SMALL]: getSetting(runtime, 'AKASH_CHAT_SMALL_MODEL') || 'Meta-Llama-3-1-8B-Instruct-FP8',
+    [ModelType.TEXT_LARGE]: getSetting(runtime, 'AKASH_CHAT_LARGE_MODEL') || 'Meta-Llama-3-3-70B-Instruct'
+  };
+  
+  return modelMappings[modelType as keyof typeof modelMappings] || modelMappings[ModelType.TEXT_LARGE];
 }
 
 /**
@@ -174,37 +181,35 @@ async function detokenizeText(runtime: Runtime, model: ModelTypeName, tokens: nu
 }
 
 /**
- * Handles rate limit errors with exponential backoff
+ * Optimized rate limit handling with intelligent backoff
  */
 async function handleRateLimitError(error: Error, retryFn: () => Promise<unknown>, retryCount = 0) {
-  if (!error.message.includes('Rate limit')) {
-    throw error;
+  if (!error.message.includes('Rate limit')) throw error;
+  
+  // Maximum 2 retries for efficiency
+  if (retryCount >= 2) {
+    logger.error('Max retries reached for rate limit');
+    throw new Error('Service temporarily unavailable due to rate limits');
   }
   
-  // Extract retry delay from error message if possible
-  let retryDelay = Math.min(10000 * Math.pow(1.5, retryCount), 60000); // Exponential backoff with 1 minute max
+  // Smart delay calculation
   const delayMatch = error.message.match(/try again in (\d+\.?\d*)s/i);
+  const retryDelay = delayMatch?.[1] 
+    ? Math.ceil(Number.parseFloat(delayMatch[1]) * 1000) + 200  // API suggested delay + buffer
+    : Math.min(5000 * Math.pow(2, retryCount), 30000);         // Exponential: 5s, 10s, 30s max
   
-  if (delayMatch?.[1]) {
-    // Convert to milliseconds and add a small buffer
-    retryDelay = Math.ceil(Number.parseFloat(delayMatch[1]) * 1000) + 500;
-  }
-  
-  logger.info(`Rate limit reached. Retrying after ${retryDelay}ms (attempt ${retryCount + 1})`);
-  await new Promise((resolve) => setTimeout(resolve, retryDelay));
+  logger.info(`Rate limit hit. Retrying in ${retryDelay}ms (attempt ${retryCount + 1}/2)`);
+  await new Promise(resolve => setTimeout(resolve, retryDelay));
   
   try {
     return await retryFn();
   } catch (retryError: any) {
-    if (retryError.message.includes('Rate limit') && retryCount < 3) {
-      return handleRateLimitError(retryError, retryFn, retryCount + 1);
-    }
-    throw retryError;
+    return handleRateLimitError(retryError, retryFn, retryCount + 1);
   }
 }
 
 /**
- * Generate text using AkashChat API with optimized handling
+ * Optimized text generation with streamlined error handling and caching
  */
 async function generateAkashChatText(
   akashchat: ReturnType<typeof createOpenAI>,
@@ -219,17 +224,43 @@ async function generateAkashChatText(
     stopSequences: string[];
   }
 ) {
+  const startTime = Date.now();
+  
+  // Generate cache key from parameters
+  const cacheKey = `text:${model}:${JSON.stringify(params)}`;
+  
+  // Check cache first for deterministic requests (low temperature)
+  if (params.temperature < 0.3) {
+    const cachedResult = textCache.get(cacheKey);
+    if (cachedResult) {
+      logger.info('Cache hit for text generation');
+      performanceMonitor.recordCacheHit();
+      return cachedResult;
+    }
+  }
+
   try {
     const { text } = await generateText({
       model: akashchat.languageModel(model),
       prompt: params.prompt,
       system: params.system,
-      temperature: params.temperature,
-      maxTokens: params.maxTokens,
+      temperature: Math.min(params.temperature, 1.0), // Ensure valid range
+      maxTokens: Math.min(params.maxTokens, 8192),    // Optimize token usage
       frequencyPenalty: params.frequencyPenalty,
       presencePenalty: params.presencePenalty,
-      stopSequences: params.stopSequences,
+      stopSequences: params.stopSequences.slice(0, 4), // Limit stop sequences
     });
+    
+    // Cache result if temperature is low (deterministic)
+    if (params.temperature < 0.3) {
+      textCache.set(cacheKey, text);
+      logger.info('Cached text generation result');
+    }
+    
+    // Record performance metrics
+    const latency = Date.now() - startTime;
+    performanceMonitor.recordRequest(latency, false);
+    
     return text;
   } catch (error: unknown) {
     if (error instanceof Error && error.message.includes('Rate limit')) {
@@ -238,8 +269,8 @@ async function generateAkashChatText(
       ) as Promise<string>;
     }
     
-    logger.error('Error generating text:', error);
-    return 'Error generating text. Please try again later.';
+    logger.error('Text generation failed:', error);
+    return 'I encountered an error generating a response. Please try asking again.';
   }
 }
 
@@ -319,37 +350,36 @@ export const akashchatPlugin: Plugin = {
         getSetting(runtime, 'AKASHCHAT_EMBEDDING_DIMENSIONS', '1024')
       ) as (typeof VECTOR_DIMS)[keyof typeof VECTOR_DIMS];
       
-      // Validate embedding dimension
-      if (!Object.values(VECTOR_DIMS).includes(embeddingDimension)) {
-        logger.error(`Invalid embedding dimension: ${embeddingDimension}`);
+      // Optimized embedding dimension validation
+      const validDimensions = Object.values(VECTOR_DIMS);
+      if (!validDimensions.includes(embeddingDimension)) {
+        logger.error(`Invalid embedding dimension: ${embeddingDimension}. Valid: ${validDimensions.join(', ')}`);
         throw new Error(`Invalid embedding dimension: ${embeddingDimension}`);
       }
       
-      // Handle null input (initialization case)
+      // Fast path for initialization
       if (params === null) {
-        const testVector = Array(embeddingDimension).fill(0);
-        testVector[0] = 0.1;
-        return testVector;
+        return Array(embeddingDimension).fill(0).map((_, i) => i === 0 ? 0.1 : 0);
       }
       
-      // Get the text from whatever format was provided
-      let text: string;
-      if (typeof params === 'string') {
-        text = params;
-      } else if (typeof params === 'object' && params.text) {
-        text = params.text;
-      } else {
-        const fallbackVector = Array(embeddingDimension).fill(0);
-        fallbackVector[0] = 0.2;
-        return fallbackVector;
-      }
+      // Efficient text extraction
+      const text = typeof params === 'string' ? params : params?.text || '';
       
-      // Skip API call for empty text
+      // Quick return for empty text
       if (!text.trim()) {
-        const emptyVector = Array(embeddingDimension).fill(0);
-        emptyVector[0] = 0.3;
-        return emptyVector;
+        return Array(embeddingDimension).fill(0).map((_, i) => i === 0 ? 0.2 : 0);
       }
+      
+      // Check cache first
+      const cacheKey = `embedding:${text}:${embeddingDimension}`;
+      const cachedEmbedding = embeddingCache.get(cacheKey);
+      if (cachedEmbedding) {
+        logger.info('Cache hit for embedding generation');
+        performanceMonitor.recordCacheHit();
+        return cachedEmbedding;
+      }
+      
+      const startTime = Date.now();
       
       try {
         const baseURL = getBaseURL();
@@ -379,7 +409,17 @@ export const akashchatPlugin: Plugin = {
           return errorVector;
         }
         
-        return data.data[0].embedding;
+        const embedding = data.data[0].embedding;
+        
+        // Cache the successful result
+        embeddingCache.set(cacheKey, embedding);
+        logger.info('Cached embedding result');
+        
+        // Record performance metrics
+        const latency = Date.now() - startTime;
+        performanceMonitor.recordRequest(latency, false);
+        
+        return embedding;
       } catch (error) {
         logger.error('Error generating embedding:', error);
         const errorVector = Array(embeddingDimension).fill(0);

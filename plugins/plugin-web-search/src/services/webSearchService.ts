@@ -6,25 +6,32 @@ import {
 } from "@elizaos/core";
 import { tavily } from "@tavily/core";
 import type { IWebSearchService, SearchOptions, SearchResponse } from "../types";
+import { PerformanceCache } from "../lib/performance-cache";
+import { performanceMonitor } from "../lib/performance-monitor";
 
 export type TavilyClient = ReturnType<typeof tavily>; // declaring manually because original package does not export its types
 
-// List of official Akash Network documentation and community sites
+// List of official Akash Network documentation and community sites (optimized for priority search)
 const AKASH_OFFICIAL_DOMAINS = [
-    'docs.akash.network',
-    'akash.network',
-    'github.com/akash-network',
-    'forum.akash.network',
-    'awesome.akash.network',
-    'x.com/akashnet_',
-    'twitter.com/akashnet_'
+    'docs.akash.network',      // Priority 1: Official docs
+    'akash.network',           // Priority 2: Main site  
+    'github.com/akash-network', // Priority 3: Code repos
+    'x.com/akashnet_',         // Priority 4: Official Twitter
+    'twitter.com/akashnet_',   // Priority 4: Official Twitter (old)
+    'forum.akash.network',     // Priority 5: Community
+    'awesome.akash.network'    // Priority 6: Awesome list
 ];
 
-// List of social media domains to check for
+// Optimized social media domains for current info
 const SOCIAL_MEDIA_DOMAINS = [
-    'twitter.com',
     'x.com',
-    'medium.com'
+    'twitter.com',
+    'medium.com/@akashnet_'
+];
+
+// Optimized query enhancement keywords 
+const AKASH_ENHANCEMENT_KEYWORDS = [
+    'deployment', 'SDL', 'provider', 'gpu', 'mainnet', 'pricing', 'validator'
 ];
 
 // Special events/topics with dedicated documentation links
@@ -161,17 +168,27 @@ const isSocialMediaSource = (url: string): boolean => {
     return SOCIAL_MEDIA_DOMAINS.some(domain => url.includes(domain));
 };
 
-// Helper function to enhance query with Akash-specific terms
+// Optimized helper function to enhance query with Akash-specific terms
 const enhanceAkashQuery = (query: string): string => {
-    // Check if query already mentions Akash
-    const containsAkash = query.toLowerCase().includes('akash');
+    const queryLower = query.toLowerCase();
     
-    // If query doesn't explicitly mention Akash, add it
-    if (!containsAkash) {
-        return `${query} Akash Network`;
+    // Skip enhancement if already contains Akash
+    if (queryLower.includes('akash')) return query;
+    
+    // Intelligently add context based on query type
+    const deploymentTerms = ['deploy', 'deployment', 'sdl', 'yaml', 'manifest'];
+    const providerTerms = ['provider', 'gpu', 'cpu', 'compute', 'resources'];
+    const networkTerms = ['mainnet', 'testnet', 'validator', 'staking'];
+    
+    if (deploymentTerms.some(term => queryLower.includes(term))) {
+        return `${query} Akash Network deployment`;
+    } else if (providerTerms.some(term => queryLower.includes(term))) {
+        return `${query} Akash Network provider`;
+    } else if (networkTerms.some(term => queryLower.includes(term))) {
+        return `${query} Akash Network blockchain`;
     }
     
-    return query;
+    return `${query} Akash Network`;
 };
 
 // Helper function to determine if a query is about recent updates or news
@@ -229,6 +246,13 @@ const getSpecialTopicFromQuery = (query: string): {name: string, links: any[]} |
 export class WebSearchService extends Service implements IWebSearchService {
     public tavilyClient: TavilyClient;
     private static _instance: WebSearchService;
+    private searchCache: PerformanceCache<SearchResponse>;
+
+    constructor() {
+        super();
+        // Initialize cache with 30-minute TTL for search results
+        this.searchCache = new PerformanceCache<SearchResponse>(100, 30 * 60 * 1000);
+    }
 
     // Required implementation for Service
     public capabilityDescription = "Search the web for information";
@@ -261,6 +285,19 @@ export class WebSearchService extends Service implements IWebSearchService {
         query: string,
         options?: SearchOptions,
     ): Promise<SearchResponse> {
+        const startTime = Date.now();
+        
+        // Generate cache key from query and options
+        const cacheKey = `search:${query}:${JSON.stringify(options || {})}`;
+        
+        // Check cache first
+        const cachedResult = this.searchCache.get(cacheKey);
+        if (cachedResult) {
+            elizaLogger.log(`Cache hit for query: "${query}"`);
+            performanceMonitor.recordCacheHit();
+            return cachedResult;
+        }
+
         try {
             // Check if this query is about a special topic
             const specialTopic = getSpecialTopicFromQuery(query);
@@ -376,11 +413,21 @@ export class WebSearchService extends Service implements IWebSearchService {
                 }
             }
             
-            return {
+            const result = {
                 ...generalResponse,
                 answer,
                 results: combinedResults
             };
+            
+            // Cache the result before returning
+            this.searchCache.set(cacheKey, result);
+            elizaLogger.log(`Cached search result for query: "${query}"`);
+            
+            // Record performance metrics
+            const latency = Date.now() - startTime;
+            performanceMonitor.recordRequest(latency, false);
+            
+            return result;
         } catch (error) {
             elizaLogger.error("Web search error:", error);
             throw error;

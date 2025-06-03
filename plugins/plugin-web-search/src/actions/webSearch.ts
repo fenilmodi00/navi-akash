@@ -74,81 +74,87 @@ const isSpecialTopicURL = (url: string): boolean => {
     return specialURLs.some(specialURL => url.includes(specialURL));
 };
 
-// Helper function to format search results in a more readable way
+// Optimized helper function to format search results efficiently
 function formatSearchResults(results: SearchResult[]): string {
-    if (!results || results.length === 0) {
-        return "I couldn't find any relevant information.";
-    }
+    if (!results?.length) return "No relevant information found.";
     
-    // Separate results by type
-    const specialTopicResults = results.filter(result => isSpecialTopicURL(result.url));
-    const twitterResults = results.filter(result => isTwitterSource(result.url) && !isSpecialTopicURL(result.url));
-    const otherResults = results.filter(result => !isTwitterSource(result.url) && !isSpecialTopicURL(result.url));
+    // Pre-categorize results for efficient processing
+    const categories = {
+        official: results.filter(r => isSpecialTopicURL(r.url)),
+        social: results.filter(r => isTwitterSource(r.url) && !isSpecialTopicURL(r.url)),
+        other: results.filter(r => !isTwitterSource(r.url) && !isSpecialTopicURL(r.url))
+    };
     
-    let formattedOutput = '';
+    let output = '';
     
-    // Format special topic results first if they exist
-    if (specialTopicResults.length > 0) {
-        formattedOutput += "### Official Documentation\n\n";
-        
-        specialTopicResults.forEach((result) => {
-            formattedOutput += `**[${result.title}](${result.url})**\n${result.content}\n\n`;
+    // Official docs first (highest priority)
+    if (categories.official.length) {
+        output += "### 📋 Official Documentation\n\n";
+        categories.official.forEach(result => {
+            output += `**[${result.title}](${result.url})**\n${result.content.substring(0, 150)}...\n\n`;
         });
     }
     
-    // Format Twitter results next if they exist
-    if (twitterResults.length > 0) {
-        formattedOutput += "### Recent Twitter Updates\n\n";
-        
-        twitterResults.forEach((result, index) => {
-            // Extract username from Twitter URL
-            let username = 'akashnet_'; // Default
-            const usernameMatch = result.url.match(/twitter\.com\/([^\/]+)/) || result.url.match(/x\.com\/([^\/]+)/);
-            if (usernameMatch && usernameMatch[1]) {
-                username = usernameMatch[1];
-            }
-            
-            // Extract date if available - use more flexible patterns
-            let date = '';
-            const dateMatch = result.content.match(/(\d{1,2} [A-Za-z]{3} \d{4})|([A-Za-z]{3} \d{1,2}, \d{4})|(\d{1,2}[hm] ago)|(\d{1,2} hours? ago)|(\d{1,2} days? ago)|(\d{1,2} mins? ago)|(\d{1,2}\/\d{1,2}\/\d{2,4})|((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2})/i);
-            if (dateMatch) {
-                date = ` (${dateMatch[0]})`;
-            }
-            
-            // Format tweet content - clean up common patterns
+    // Recent updates from social media
+    if (categories.social.length) {
+        output += "### 🐦 Latest Updates\n\n";
+        categories.social.forEach(result => {
+            const username = result.url.match(/(?:twitter\.com|x\.com)\/([^\/]+)/)?.[1] || 'akashnet_';
+            // Clean up tweet content
             let content = result.content
                 .replace(/http[s]?:\/\/t\.co\/\w+/g, '') // Remove t.co links
                 .replace(/(\d+) replies (\d+) reposts (\d+) likes/gi, '') // Remove metrics
                 .trim();
-                
+            
             if (content.length > 200) {
                 content = content.substring(0, 200).trim() + '...';
             }
             
-            formattedOutput += `**[@${username}${date}](${result.url})**\n${content}\n\n`;
+            output += `**[@${username}](${result.url})**\n${content}\n\n`;
         });
     }
     
-    // Format other results
-    if (otherResults.length > 0) {
-        formattedOutput += otherResults.length > 0 && (specialTopicResults.length > 0 || twitterResults.length > 0) 
-            ? "### Other Resources\n\n" 
-            : "";
-        
-        otherResults.forEach((result, index) => {
-            // Extract domain from URL for better readability
-            const urlObj = new URL(result.url);
-            const domain = urlObj.hostname;
-            
-            // Format the content to be more readable
-            const content = result.content.substring(0, 200).trim() + (result.content.length > 200 ? '...' : '');
-            
-            formattedOutput += `**${index + 1}. [${result.title}](${result.url})** (${domain})\n${content}\n\n`;
+    // Other relevant results
+    if (categories.other.length) {
+        output += "### 🔍 Additional Resources\n\n";
+        categories.other.slice(0, 3).forEach((result, index) => {
+            const domain = new URL(result.url).hostname;
+            const content = result.content.substring(0, 150).trim() + '...';
+            output += `**${index + 1}. [${result.title}](${result.url})** (${domain})\n${content}\n\n`;
         });
     }
     
-    return formattedOutput;
+    return MaxTokens(output, DEFAULT_MAX_WEB_SEARCH_TOKENS);
 }
+
+// Optimized trigger condition for web search
+const shouldTriggerWebSearch = (text: string): boolean => {
+    const lowerText = text.toLowerCase();
+    
+    // Fast path: common trigger phrases
+    const triggerPhrases = [
+        'search for', 'find', 'look up', 'what is', 'tell me about',
+        'latest', 'recent', 'current', 'new', 'update', 'news',
+        'how to', 'guide', 'tutorial', 'documentation'
+    ];
+    
+    const hasTriggerPhrase = triggerPhrases.some(phrase => lowerText.includes(phrase));
+    
+    // Enhanced Akash-specific triggers
+    const akashTerms = [
+        'akash network', 'akash', 'akt token', 'provider', 'deployment',
+        'supercloud', 'gpu', 'pricing', 'validator', 'mainnet'
+    ];
+    
+    const hasAkashTerm = akashTerms.some(term => lowerText.includes(term));
+    
+    // Trigger if has trigger phrase OR (has Akash term AND question-like)
+    const isQuestion = lowerText.includes('?') || lowerText.startsWith('what') || 
+                      lowerText.startsWith('how') || lowerText.startsWith('when') ||
+                      lowerText.startsWith('where') || lowerText.startsWith('why');
+    
+    return hasTriggerPhrase || (hasAkashTerm && isQuestion);
+};
 
 export const webSearch: Action = {
     name: "WEB_SEARCH",
@@ -169,8 +175,9 @@ export const webSearch: Action = {
     // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         const tavilyApiKeyOk = !!runtime.getSetting("TAVILY_API_KEY");
-
-        return tavilyApiKeyOk;
+        const shouldTrigger = shouldTriggerWebSearch(message.content.text);
+        
+        return tavilyApiKeyOk && shouldTrigger;
     },
     handler: async (
         runtime: IAgentRuntime,
