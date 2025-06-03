@@ -1,0 +1,13 @@
+# Render deployment configuration
+# This file tells Render how to build and run your Discord bot
+
+# Build Command: Install dependencies and build
+bun run install:all && bun run build:all
+
+# Start Command: Run the bot
+bun start
+
+# Environment: Node.js
+# Plan: Free (750 hours/month)
+# Region: Oregon (US West)
+# Auto-Deploy: Yes (on git push)

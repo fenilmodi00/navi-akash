@@ -57,6 +57,7 @@
     "start": "tsup && elizaos start",
     "dev": "tsup && elizaos dev",
     "build": "tsup",
+    "vercel-build": "tsup",
     "build:plugins": "cd plugins/plugin-discord && bun run build && cd ../plugin-akash-chat && bun run build && cd ../plugin-knowledge && bun run build && cd ../plugin-web-search && bun run build",
     "build:all": "bun run build:plugins && bun run build",
     "lint": "eslint ./src --ext .ts,.js",
@@ -73,5 +74,9 @@
   "engines": {
     "node": ">=18.0.0",
     "bun": ">=1.0.0"
+  },
+  "render": {
+    "buildCommand": "bun run install:all && bun run build:all",
+    "startCommand": "bun start"
   }
 }

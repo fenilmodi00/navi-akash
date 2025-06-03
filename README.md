@@ -271,6 +271,40 @@ docker stats navi-akash-bot
 docker-compose pull && docker-compose up -d
 ```
 
+## ☁️ Cloud Deployment Options
+
+### Railway (Recommended)
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Deploy
+railway login
+railway link
+railway up
+```
+
+### Render
+1. Connect your GitHub repository
+2. Create a "Web Service"
+3. Build command: `bun run build:all`
+4. Start command: `bun start`
+
+### Fly.io
+```bash
+# Install flyctl and deploy
+curl -L https://fly.io/install.sh | sh
+fly launch
+fly deploy
+```
+
+### DigitalOcean App Platform
+1. Connect GitHub repository
+2. Use Docker deployment with existing Dockerfile
+3. Set environment variables in platform dashboard
+
+> **Note**: Vercel is not suitable for Discord bots as it's designed for web applications, not long-running processes.
+
 ## 🔍 Monitoring & Maintenance
 
 ### Health Checks

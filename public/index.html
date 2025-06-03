@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navi-Akash Discord Bot</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .online { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .offline { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Navi-Akash Bot</h1>
+    <p>Discord bot for Akash Network powered by elizaOS</p>
+    
+    <div id="status" class="status">
+        <p>Checking bot status...</p>
+    </div>
+    
+    <h2>Features</h2>
+    <ul>
+        <li>🤖 Akash Network support</li>
+        <li>📚 Knowledge base integration</li>
+        <li>🔍 Web search capabilities</li>
+        <li>🎤 Voice channel support</li>
+    </ul>
+
+    <script>
+        fetch('/api/health')
+            .then(res => res.json())
+            .then(data => {
+                const statusDiv = document.getElementById('status');
+                if (data.status === 'ok') {
+                    statusDiv.className = 'status online';
+                    statusDiv.innerHTML = '<p>✅ Bot is online and running</p>';
+                } else {
+                    statusDiv.className = 'status offline';
+                    statusDiv.innerHTML = '<p>❌ Bot is offline</p>';
+                }
+            })
+            .catch(() => {
+                const statusDiv = document.getElementById('status');
+                statusDiv.className = 'status offline';
+                statusDiv.innerHTML = '<p>❌ Unable to connect to bot</p>';
+            });
+    </script>
+</body>
+</html>
