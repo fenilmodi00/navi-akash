@@ -43,7 +43,7 @@ Navi-Akash is a developer support agent for Akash Network that lives and breathe
 2. Install dependencies and build the project:
    ```bash
    # Automated build script (recommended)
-   ./build.sh
+   ./scripts/build.sh
    
    # Or manually
    bun install
