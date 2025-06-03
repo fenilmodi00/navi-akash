@@ -48,15 +48,29 @@ app.get('/', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🌐 Dashboard: http://localhost:${PORT}`);
   
-  // Import and start the Discord bot
-  import('./agent.js').then(() => {
-    console.log('🤖 Discord bot started successfully!');
-  }).catch((error) => {
-    console.error('❌ Failed to start Discord bot:', error);
+  // Import and start the Discord bot in production or local development
+  if (process.env.NODE_ENV !== 'development' || process.env.START_BOT !== 'false') {
+    import('./agent.js').then(() => {
+      console.log('🤖 Discord bot started successfully!');
+    }).catch((error) => {
+      console.error('❌ Failed to start Discord bot:', error);
+    });
+  } else {
+    console.log('⏸️  Discord bot startup skipped (development mode)');
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🔄 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
   });
 });
 

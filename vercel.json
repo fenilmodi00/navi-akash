@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "buildCommand": "bun run build:all",
+  "devCommand": "bun run dev",
+  "framework": null,
+  "installCommand": "bun install",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs18.x"
+    },
+    "src/server.ts": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "builds": [
+    {
+      "src": "public/**/*",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "api/**/*.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "3000",
+    "DISCORD_APPLICATION_ID": "@discord-application-id",
+    "DISCORD_API_TOKEN": "@discord-api-token",
+    "AKASH_CHAT_API_KEY": "@akash-chat-api-key",
+    "AKASH_CHAT_BASE_URL": "https://chatapi.akash.network/api/v1",
+    "AKASH_CHAT_SMALL_MODEL": "Meta-Llama-4-Maverick-17B-128E-Instruct-FP8",
+    "AKASH_CHAT_LARGE_MODEL": "DeepSeek-R1-0528",
+    "TAVILY_API_KEY": "@tavily-api-key",
+    "CTX_KNOWLEDGE_ENABLED": "false",
+    "LOAD_DOCS_ON_STARTUP": "true"
+  }
+}

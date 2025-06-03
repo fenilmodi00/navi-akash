@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "main": "dist/server.js",
-  "module": "dist/server.js",
-  "types": "dist/server.d.ts",
+  "main": "dist/agent.js",
+  "module": "dist/agent.js",
+  "types": "dist/agent.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -45,6 +45,7 @@
     "@types/node": "^22.15.3",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/parser": "^8.15.0",
+    "@vercel/node": "^3.0.0",
     "@vitest/coverage-v8": "2.1.5",
     "eslint": "^8",
     "eslint-import-resolver-alias": "^1.1.2",
@@ -56,13 +57,13 @@
     "vitest": "2.1.5"
   },
   "scripts": {
-    "start": "node start.cjs",
-    "start:direct": "node dist/server.js",
-    "start:bun": "bun run dist/server.js",
+    "start": "bun run dist/agent.js",
+    "start:server": "bun run dist/server.js",
     "start:bot": "tsup && elizaos start",
-    "dev": "tsup && elizaos dev",
+    "dev": "PORT=3000 bun run build:all && bun run dist/server.js",
+    "dev:script": "./scripts/dev.sh",
     "build": "tsup",
-    "vercel-build": "tsup",
+    "vercel-build": "bun run build:all",
     "build:plugins": "cd plugins/plugin-discord && bun run build && cd ../plugin-akash-chat && bun run build && cd ../plugin-knowledge && bun run build && cd ../plugin-web-search && bun run build",
     "build:all": "bun run build:plugins && bun run build",
     "lint": "eslint ./src --ext .ts,.js",
@@ -79,9 +80,5 @@
   "engines": {
     "node": ">=18.0.0",
     "bun": ">=1.0.0"
-  },
-  "render": {
-    "buildCommand": "bun run install:all && bun run build:all",
-    "startCommand": "bun start"
   }
 }
