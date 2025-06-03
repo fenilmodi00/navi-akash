@@ -3,6 +3,7 @@ services:
     name: navi-akash
     env: node
     plan: starter
+    branch: perf
     buildCommand: bun run install:all && bun run build:all
     startCommand: bun start
     healthCheckPath: /api/health
