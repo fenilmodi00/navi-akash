@@ -42,11 +42,14 @@ Navi-Akash is a developer support agent for Akash Network that lives and breathe
 
 2. Install dependencies and build the project:
    ```bash
-   # Automated build script (recommended)
-   ./build.sh
+   # Install all dependencies for main project and plugins
+   bun run install:all
    
-   # Or manually
-   bun install
+   # Build all plugins and main project
+   bun run build:all
+   
+   # Or use the automated optimization script
+   bun run optimize
    ```
 
 3. Set up environment variables:
@@ -98,18 +101,46 @@ To build and run the bot for production:
 cd plugins/plugin-akash-chat
 bun install && bun run build
 cd ../plugin-discord
-bun install && bun run build
-cd ../plugin-knowledge
-bun install && bun run build
-cd ../plugin-web-search
-bun install && bun run build
-cd ../..
+## Quick Start
 
-# Build and start the main project
-bun install
-bun run build
-bun run start
+1. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys and configuration
+   ```
+
+2. Install and build:
+   ```bash
+   bun run install:all
+   bun run build:all
+   ```
+
+3. Start the bot:
+   ```bash
+   bun run start
+   ```
+
+## Development
+
+For development with hot reloading:
+```bash
+bun run dev
 ```
+
+## Available Scripts
+
+- `bun run start` - Start the production bot
+- `bun run dev` - Start development mode with hot reload
+- `bun run build` - Build main project only
+- `bun run build:plugins` - Build all plugins
+- `bun run build:all` - Build plugins and main project
+- `bun run install:all` - Install dependencies for all projects
+- `bun run clean` - Clean build artifacts
+- `bun run clean:all` - Clean all build artifacts and node_modules
+- `bun run optimize` - Run codebase optimization script
+- `bun run test` - Run tests
+- `bun run lint` - Run linting
+- `bun run format` - Format code
 
 ## Project Structure
 
