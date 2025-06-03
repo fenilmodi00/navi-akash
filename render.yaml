@@ -1,15 +1,31 @@
 services:
   - type: web
-    name: navi-akash-bot
+    name: navi-akash
     env: node
-    plan: free
+    plan: starter
     buildCommand: bun run install:all && bun run build:all
     startCommand: bun start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: BUNS_ENV  
-        value: production
-    autoDeploy: true
-    region: oregon
-    healthCheckPath: /api/health
+      - key: PORT
+        value: 10000
+      - key: DISCORD_APPLICATION_ID
+        sync: false
+      - key: DISCORD_API_TOKEN
+        sync: false
+      - key: AKASH_CHAT_API_KEY
+        sync: false
+      - key: AKASH_CHAT_BASE_URL
+        value: https://chatapi.akash.network/api/v1
+      - key: AKASH_CHAT_SMALL_MODEL
+        value: Meta-Llama-4-Maverick-17B-128E-Instruct-FP8
+      - key: AKASH_CHAT_LARGE_MODEL
+        value: DeepSeek-R1-0528
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: CTX_KNOWLEDGE_ENABLED
+        value: false
+      - key: LOAD_DOCS_ON_STARTUP
+        value: true
