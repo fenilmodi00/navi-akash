@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/agent.ts'],
+  entry: ['src/agent.ts', 'src/server.ts'],
   outDir: 'dist',
   tsconfig: './tsconfig.json',
   sourcemap: true,
