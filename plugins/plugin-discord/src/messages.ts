@@ -69,13 +69,20 @@ export class MessageManager {
       this.runtime.character.settings?.discord?.shouldIgnoreDirectMessages &&
       message.channel.type === DiscordChannelType.DM
     ) {
+      logger.debug(`Ignoring DM from ${message.author.username} (DM filtering enabled)`);
       return;
     }
 
+    const shouldRespondOnlyToMentions = this.runtime.character.settings?.discord?.shouldRespondOnlyToMentions;
+    const isMentioned = this.client.user?.id && message.mentions.users?.has(this.client.user.id);
+    
+    logger.debug(`Message processing: shouldRespondOnlyToMentions=${shouldRespondOnlyToMentions}, isMentioned=${isMentioned}, author=${message.author.username}, channel=${message.channel.id}`);
+    
     if (
-      this.runtime.character.settings?.discord?.shouldRespondOnlyToMentions &&
-      (!this.client.user?.id || !message.mentions.users?.has(this.client.user.id))
+      shouldRespondOnlyToMentions &&
+      (!this.client.user?.id || !isMentioned)
     ) {
+      logger.debug(`Skipping message from ${message.author.username} (not mentioned and shouldRespondOnlyToMentions=true)`);
       return;
     }
 

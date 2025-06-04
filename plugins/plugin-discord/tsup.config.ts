@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: ['src/index.ts'],
   outDir: 'dist',
-  tsconfig: './tsconfig.json',
+  tsconfig: './tsconfig.build.json', // Use build-specific tsconfig
   sourcemap: true,
   clean: true,
   format: ['esm'], // Ensure you're targeting CommonJS
