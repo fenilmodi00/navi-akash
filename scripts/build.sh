@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Load environment variables from .env file
+if [ -f ".env" ]; then
+    set -a  # automatically export all variables
+    source .env
+    set +a  # stop automatically exporting
+fi
+
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -121,5 +128,5 @@ if [ -f "/tmp/akash_api_check_failed" ]; then
     rm -f /tmp/akash_api_check_failed
 fi
 
-# Make the script executable
-chmod +x build.sh 
+# Make the script executable (if not already)
+chmod +x scripts/build.sh 
