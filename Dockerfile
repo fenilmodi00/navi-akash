@@ -120,9 +120,6 @@ COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/dist ./plug
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/dist ./plugins/plugin-knowledge/dist
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/dist ./plugins/plugin-web-search/dist
 
-# Copy any additional assets (if they exist)
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/.vite ./plugins/plugin-knowledge/.vite || true
-
 # Copy node_modules with built native dependencies
 COPY --from=builder --chown=eliza:nodejs /app/node_modules ./node_modules
 
