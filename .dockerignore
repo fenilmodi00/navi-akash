@@ -1,94 +1,103 @@
-# Dependencies
+# Ultra-aggressive .dockerignore for minimal image size
+
+# Ignore node_modules from build context
 node_modules
-plugins/*/node_modules
-npm-debug.log
-yarn-error.log
-bun-debug.log
 
-# Git and version control
-.git
-.gitignore
-.gitmodules
+# CRITICAL: Ignore the massive data directory (314MB+)
 
 
-Dockerfile
-Dockerfile.production
-# Development tools
-.vscode
-.idea
-.eslintrc.js
-.prettierrc
-.editorconfig
-
-# Documentation
-README.md
+# Ignore all documentation and metadata files
+README*
 *.md
-CHANGELOG.md
-LICENSE
+LICENSE*
+CHANGELOG*
+CONTRIBUTING*
+AUTHORS*
+NOTICE*
+COPYING*
 
-# Environment and secrets
-# Commented out to include .env in build
-# .env
-.env.local
-.env.production
-.env.*.local
+# Ignore all test-related files - MAJOR SIZE REDUCTION
+**/*.test.*
+**/*.spec.*
+**/test/
+**/tests/
+**/__tests__/
+**/__mocks__/
+**/coverage/
+.nyc_output/
+jest.config.*
+vitest.config.*
+cypress.json
+cypress/
 
-# Test and coverage
-__tests__
-*.test.ts
-*.test.js
-*.spec.ts
-*.spec.js
-coverage
-.nyc_output
-e2e/
+# Ignore development configurations
 
-# Build artifacts (exclude from source, will be built in container)
-dist
-build
-.next
-.turbo
-.cache
-plugins/*/dist
 
-# Data (use external storage)
-# Commented out to include data in build
-# data/
-uploads/
+# Ignore plugin source files and assets
+
+plugins/**/test*/
+plugins/**/example*/
+plugins/**/demo*/
+plugins/**/docs/
+plugins/**/images/
+plugins/**/assets/
+plugins/**/*.md
+plugins/**/README*
+plugins/**/LICENSE*
+plugins/**/*.test.*
+plugins/**/*.spec.*
+
+# Ignore build artifacts and caches
+build/
+
+out/
+.cache/
+.turbo/
+.next/
+.nuxt/
+coverage/
+
+# Ignore logs and temporary files
 *.log
-logs/
-.elizadb/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Temporary files
 *.tmp
 *.temp
-temp/
-tmp/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# Lock files (keep only bun.lockb)
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Ignore Git files and metadata
 
-# Development configs
-docker-compose.dev.yml
-docker-compose.override.yml
-docker-compose.local.yml
+.gitignore
+.gitattributes
+.github/
 
-# Performance and optimization artifacts
-*.map
-*.tsbuildinfo
-.turbo-tsconfig.json
-
-# Editor configs
+# Ignore IDE and editor files
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
+.DS_Store
+Thumbs.db
 
-# Optimization scripts (not needed in container)
-optimize-deps.sh
-performance-improvements.md
+# Ignore environment files
+.env*
+!.env.example
+
+# Ignore Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Ignore package manager files
+.npm/
+.pnpm-store/
+.yarn/
+yarn.lock
+package-lock.json
+
+# Ignore OS specific files
+.__MACOSX
+.Spotlight-V100
+.Trashes

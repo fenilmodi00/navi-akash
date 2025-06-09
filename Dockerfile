@@ -1,137 +1,75 @@
-# Railway Dockerfile optimized for ElizaOS deployment
-FROM node:20-bullseye-slim AS base
-
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-ENV NODE_ENV=production
-ENV PYTHON=/usr/bin/python3
-
-# Install system dependencies including Python and build tools
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    python3 \
-    python3-pip \
-    python3-dev \
-    python3-distutils \
-    ffmpeg \
-    git \
-    unzip \
-    libopus-dev \
-    libsodium-dev \
-    pkg-config \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:$PATH"
-
-# Set Python for node-gyp and bun
-ENV PYTHON=/usr/bin/python3
-ENV npm_config_python=/usr/bin/python3
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Builder stage
-FROM base AS builder
+# Install system dependencies
+RUN apk add --no-cache \
+    build-base \
+    python3 \
+    make \
+    git \
+    curl
 
-# Copy package files first for better caching
-COPY package.json bun.lock ./
-COPY bunfig.toml* ./
-COPY tsconfig*.json ./
-COPY tsup.config.ts ./
+# Install bun globally
+RUN npm install -g bun@1.2.5
 
-# Copy plugin configuration files
-COPY plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
-COPY plugins/plugin-akash-chat/tsconfig*.json ./plugins/plugin-akash-chat/
-COPY plugins/plugin-akash-chat/tsup.config.ts* ./plugins/plugin-akash-chat/
+# Create python symlink
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
-COPY plugins/plugin-discord/package.json ./plugins/plugin-discord/
-COPY plugins/plugin-discord/tsconfig*.json ./plugins/plugin-discord/
-COPY plugins/plugin-discord/tsup.config.ts* ./plugins/plugin-discord/
+# Copy package files and configurations
+COPY package.json bun.lock bunfig.toml tsconfig.json tsup.config.ts ./
 
-COPY plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
-COPY plugins/plugin-knowledge/tsconfig*.json ./plugins/plugin-knowledge/
-COPY plugins/plugin-knowledge/tsup.config.ts* ./plugins/plugin-knowledge/
-COPY plugins/plugin-knowledge/vite.config.ts* ./plugins/plugin-knowledge/
-COPY plugins/plugin-knowledge/postcss.config.js* ./plugins/plugin-knowledge/
-COPY plugins/plugin-knowledge/tailwind.config.js* ./plugins/plugin-knowledge/
-COPY plugins/plugin-knowledge/index.html* ./plugins/plugin-knowledge/
-
-COPY plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
-COPY plugins/plugin-web-search/tsconfig*.json ./plugins/plugin-web-search/
-COPY plugins/plugin-web-search/tsup.config.ts* ./plugins/plugin-web-search/
-
-# Install dependencies with proper Python environment
-ENV npm_config_build_from_source=true
-ENV npm_config_python=/usr/bin/python3
-RUN bun install --frozen-lockfile
-
-# Copy source code
+# Copy source code and plugins
 COPY src ./src
 COPY plugins ./plugins
 
-# Build the application
+# Copy data directory for knowledge base
+COPY data ./data
+
+# Install dependencies and build
+RUN bun install --production --no-cache
+
+# Build the project
 RUN bun run build
 
+# Clean up build artifacts and dev dependencies
+RUN rm -rf node_modules/.cache \
+    && rm -rf /root/.bun/install/cache \
+    && find . -name "*.test.*" -delete \
+    && find . -name "*.spec.*" -delete
+
 # Production stage
-FROM node:20-bullseye-slim AS runner
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
+# Install runtime dependencies only
+RUN apk add --no-cache \
     curl \
     ffmpeg \
     git \
-    python3 \
-    unzip \
-    libopus0 \
-    libsodium23 \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    python3
 
-# Install Bun for runtime
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:$PATH"
+# Install bun globally
+RUN npm install -g bun@1.2.5
 
-# Create non-root user
-RUN groupadd --gid 1001 nodejs && \
-    useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home eliza
+# Copy built application from builder stage
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/bunfig.toml ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/plugins ./plugins
 
-# Copy package.json and install production dependencies
-COPY --from=builder --chown=eliza:nodejs /app/package.json ./
-COPY --from=builder --chown=eliza:nodejs /app/bunfig.toml* ./
-
-# Copy plugin package.json files
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/package.json ./plugins/plugin-discord/
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
-
-# Copy built application
-COPY --from=builder --chown=eliza:nodejs /app/dist ./dist
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-akash-chat/dist ./plugins/plugin-akash-chat/dist
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/dist ./plugins/plugin-discord/dist
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/dist ./plugins/plugin-knowledge/dist
-COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/dist ./plugins/plugin-web-search/dist
-
-# Copy node_modules with built native dependencies
-COPY --from=builder --chown=eliza:nodejs /app/node_modules ./node_modules
-
-# Switch to non-root user
-USER eliza
-
-# Railway environment variables
+# Set environment to production
 ENV NODE_ENV=production
-ENV PORT=${PORT:-3000}
 
-# Expose the port
-EXPOSE $PORT
+# Expose default ports
+EXPOSE 3000
+EXPOSE 50000-50100/udp
 
-# Start the application
-CMD ["bun", "start"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start the application with the built project file
+CMD ["./node_modules/.bin/elizaos", "start", "./dist/index.js"]

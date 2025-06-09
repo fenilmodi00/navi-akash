@@ -1,23 +1,37 @@
-# Docker Compose for microservices approach
+# Docker Compose for Akash Navi
 version: '3.8'
 
 services:
-  # Main application (lighter)
+  # Main application
   akash-navi:
     build: 
       context: .
-      dockerfile: Dockerfile.main
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
+      - "50000-50100:50000-50100/udp"
     environment:
       - NODE_ENV=production
-      - KNOWLEDGE_SERVICE_URL=http://knowledge-service:4000
-      - DISCORD_SERVICE_URL=http://discord-service:5000
     volumes:
-      - data:/app/data
-    depends_on:
-      - knowledge-service
-      - discord-service
+      - ./data:/app/data
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+
+  # Production build
+  akash-navi-prod:
+    build: 
+      context: .
+      dockerfile: Dockerfile.production
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    profiles:
+      - production
 
   # Knowledge plugin as separate service
   knowledge-service:

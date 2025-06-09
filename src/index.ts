@@ -9,7 +9,6 @@ import {
   type ProjectAgent,
   type OnboardingConfig,
 } from '@elizaos/core';
-import starterPlugin from './plugin.ts';
 
 // Web search trigger function
 const shouldUseWebSearch = (query: string): boolean => {
