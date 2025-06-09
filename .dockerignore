@@ -1,0 +1,91 @@
+# Dependencies
+node_modules
+plugins/*/node_modules
+npm-debug.log
+yarn-error.log
+bun-debug.log
+
+# Git and version control
+.git
+.gitignore
+.gitmodules
+
+
+Dockerfile
+Dockerfile.production
+# Development tools
+.vscode
+.idea
+.eslintrc.js
+.prettierrc
+.editorconfig
+
+# Documentation
+README.md
+*.md
+CHANGELOG.md
+LICENSE
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Test and coverage
+__tests__
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+coverage
+.nyc_output
+e2e/
+
+# Build artifacts (exclude from source, will be built in container)
+dist
+build
+.next
+.turbo
+.cache
+plugins/*/dist
+
+# Data (use external storage)
+data/
+uploads/
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Lock files (keep only bun.lockb)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Development configs
+docker-compose.dev.yml
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Performance and optimization artifacts
+*.map
+*.tsbuildinfo
+.turbo-tsconfig.json
+
+# Editor configs
+*.swp
+*.swo
+*~
+
+# Optimization scripts (not needed in container)
+optimize-deps.sh
+performance-improvements.md
