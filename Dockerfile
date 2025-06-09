@@ -31,8 +31,7 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:$PATH"
 
-# Set Python for node-gyp
-RUN npm config set python /usr/bin/python3
+# Set Python for node-gyp and bun
 ENV PYTHON=/usr/bin/python3
 ENV npm_config_python=/usr/bin/python3
 
