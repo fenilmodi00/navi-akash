@@ -27,7 +27,8 @@ CHANGELOG.md
 LICENSE
 
 # Environment and secrets
-.env
+# Commented out to include .env in build
+# .env
 .env.local
 .env.production
 .env.*.local
@@ -51,10 +52,12 @@ build
 plugins/*/dist
 
 # Data (use external storage)
-data/
+# Commented out to include data in build
+# data/
 uploads/
 *.log
 logs/
+.elizadb/
 
 # OS files
 .DS_Store

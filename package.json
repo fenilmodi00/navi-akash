@@ -58,8 +58,9 @@
   },
   "scripts": {
     "start": "elizaos start",
-    "build": "bun run build:plugins && tsup",
+    "build": "bun run build:plugins && bun run build:main",
     "build:plugins": "for plugin in plugins/*; do (cd \"$plugin\" && bun run build); done",
+    "build:main": "tsup",
     "install:prod": "bun install --frozen-lockfile --production",
     "docker:build": "docker build -t akash-navi .",
     "docker:build:prod": "docker build -f Dockerfile.production -t akash-navi:prod ."

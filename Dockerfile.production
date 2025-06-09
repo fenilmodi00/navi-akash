@@ -25,13 +25,13 @@ FROM base AS builder
 
 # Copy workspace configuration files first for better layer caching
 COPY package.json bun.lock bunfig.toml ./
-COPY tsconfig.json ./
+COPY tsconfig.json tsup.config.ts ./
 
-# Copy plugin package.json files for workspace dependency resolution
-COPY plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
-COPY plugins/plugin-discord/package.json ./plugins/plugin-discord/
-COPY plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
-COPY plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
+# Copy plugin package.json and tsconfig files for workspace dependency resolution
+COPY plugins/plugin-akash-chat/package.json plugins/plugin-akash-chat/tsconfig.json ./plugins/plugin-akash-chat/
+COPY plugins/plugin-discord/package.json plugins/plugin-discord/tsconfig.json ./plugins/plugin-discord/
+COPY plugins/plugin-knowledge/package.json plugins/plugin-knowledge/tsconfig.json ./plugins/plugin-knowledge/
+COPY plugins/plugin-web-search/package.json plugins/plugin-web-search/tsconfig.json ./plugins/plugin-web-search/
 
 # Install all dependencies (including devDependencies for build)
 RUN bun install --frozen-lockfile
@@ -80,6 +80,12 @@ COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/dist ./plug
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/dist ./plugins/plugin-knowledge/dist
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/dist ./plugins/plugin-web-search/dist
 
+# Copy .env file if it exists (use default .env.example if not provided at build time)
+COPY .env.example .env* ./
+
+# Copy data directory
+COPY --chown=eliza:nodejs data ./data
+
 USER eliza
 
 EXPOSE 3000
@@ -95,4 +101,5 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Use dumb-init for proper signal handling (following ElizaOS pattern)
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["bun", "start"]
+# Add more verbose logging to debug startup issues
+CMD ["sh", "-c", "ls -la && echo 'ENV:' && env | sort && echo 'Starting application...' && bun start || (echo 'Startup failed! Error code: $?' && sleep 10)"]
