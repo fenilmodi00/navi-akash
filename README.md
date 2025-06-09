@@ -1,12 +1,14 @@
-# 🚀 Navi - Akash Network Support Agent
+# 🚀 Navi-Akash
 
-> A powerful AI agent specialized in Akash Network deployment support, powered by ElizaOS
+> A powerful Discord bot for Akash Network powered by elizaOS
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![ElizaOS](https://img.shields.io/badge/ElizaOS-Agent-blue.svg)](https://github.com/elizaOS/eliza)
-[![Akash Network](https://img.shields.io/badge/Akash-Network-red.svg)](https://akash.network/)
+[![Node/Bun](https://img.shields.io/badge/Node.js-Bun-green.svg)](https://bun.sh/)
+[![Discord](https://img.shields.io/badge/Discord-Bot-blue.svg)](https://discord.js.org/)
 
-Navi is an intelligent developer support agent for Akash Network that helps users navigate the Akash ecosystem, troubleshoot deployment issues, and get projects up and running on the decentralized cloud. The agent has deep knowledge of Akash docs, SDL files, deployment processes, and integrations.
+Navi-Akash is an intelligent developer support agent for Akash Network that lives and breathes cloud deployment. It helps users navigate the Akash ecosystem, troubleshoot deployment issues, and get projects up and running on the decentralized cloud. The bot has deep knowledge of Akash docs, SDL files, deployment processes, and integrations.
+
+---
 
 ## ✨ Features
 
@@ -18,227 +20,384 @@ Navi is an intelligent developer support agent for Akash Network that helps user
 - 🧠 **Akash Chat API**: Uses Akash's own AI infrastructure for responses
 - Built-in documentation and examples
 
+---
+
 ## 🛠️ Tech Stack
 
-- **Runtime**: [Bun.js](https://bun.sh/) / Node.js
-- **Framework**: [ElizaOS](https://github.com/elizaOS/eliza)
+- **Runtime**: [Bun.js](https://bun.sh/) / Node.js (18+)
+- **Framework**: [elizaOS](https://github.com/elizaOS/eliza)
 - **Plugins**:
   - **plugin-akash-chat**: Handles Akash Network specific chat functionality
   - **plugin-discord**: Manages Discord integration
   - **plugin-knowledge**: Provides knowledge base functionality
   - **plugin-web-search**: Enables web search capabilities
 
+---
+
 ## 📋 Prerequisites
 
-- [Bun.js](https://bun.sh/) or Node.js (latest version)
+- [Bun.js](https://bun.sh/) (latest version)
+- Node.js (v18+)
+- Python 3 (for some dependencies)
 - Git
 - Discord bot token and application ID
 - Akash Chat API key
 - Tavily API key (for web search)
 
+---
+
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### 1. Clone the Repository
 
 ```bash
-npm install
-# or
+git clone https://github.com/fenilmodi00/navi-akash.git
+cd navi-akash
+```
+
+### 2. Install Dependencies
+
+```bash
 bun install
+# or, if you prefer npm:
+npm install
 ```
 
-### 2. Configure Environment Variables
-
-Edit the `.env` file and add your API keys:
+### 3. Build and Start the Application
 
 ```bash
-# Discord Configuration (Required)
-DISCORD_APPLICATION_ID=your_discord_application_id_here
-DISCORD_API_TOKEN=your_discord_bot_token_here
-
-# Akash Chat API Configuration (Required)
-AKASH_CHAT_API_KEY=your_akash_chat_api_key_here
-
-# Web Search Configuration (Required)
-TAVILY_API_KEY=your_tavily_api_key_here
-```
-
-### 3. Build and Run
-
-```bash
-npm run build
-npm start
-# or
 bun run build
 bun run start
 ```
 
-## Development
+This will:
+- ✅ Build all plugins and main project
+- ✅ Start the application
+
+For development mode with auto-reload:
 
 ```bash
-# Start development server
+bun run dev
+```
+
+### 4. Configure Environment Variables
+
+Edit the `.env` file and add your API keys:
+
+```env
+DISCORD_APPLICATION_ID=your_discord_application_id
+DISCORD_API_TOKEN=your_discord_bot_token
+AKASH_CHAT_API_KEY=your_akash_chat_api_key
+TAVILY_API_KEY=your_tavily_api_key
+```
+
+---
+
+## 🔑 Required Environment Variables
+
+See `.env.example` for a full template.
+
+### Discord Configuration (Required)
+Get your Discord credentials from [Discord Developer Portal](https://discord.com/developers/applications):
+
+```env
+DISCORD_APPLICATION_ID=your_discord_application_id
+DISCORD_API_TOKEN=your_discord_bot_token
+```
+
+### Akash Chat API (Required)
+Get your API key from [Akash Chat API](https://chatapi.akash.network):
+
+```env
+AKASH_CHAT_API_KEY=your_akash_chat_api_key
+OPENAI_API_KEY=your_akash_chat_api_key  # Same as above
+```
+
+### Tavily API (Required for Web Search)
+Get your API key from [Tavily](https://tavily.com):
+
+```env
+TAVILY_API_KEY=your_tavily_api_key
+```
+
+### Optional Configuration
+
+```env
+GITHUB_TOKEN=your_github_token
+CTX_KNOWLEDGE_ENABLED=false
+LOAD_DOCS_ON_STARTUP=true
+```
+
+---
+
+## 🎯 Complete Setup Guide
+
+### Step-by-Step Instructions
+
+1. **Clone and Setup**
+   ```bash
+   git clone https://github.com/fenilmodi00/navi-akash.git
+   cd navi-akash
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   bun install
+   # or
+   npm install
+   ```
+
+3. **Build and Start**
+   ```bash
+   bun run build && bun run start
+   ```
+
+4. **Configure Environment**
+   - Copy `.env.example` to `.env` if it doesn't exist: `cp .env.example .env`
+   - Edit the `.env` file with your API keys (see sections above)
+   - Required keys: `DISCORD_API_TOKEN`, `DISCORD_APPLICATION_ID`, `AKASH_CHAT_API_KEY`, `TAVILY_API_KEY`
+
+5. **Restart with Configuration**
+   ```bash
+   bun run start
+   ```
+
+---
+
+## 🔧 Development
+
+### Development Mode
+
+```bash
+bun run dev
+# or
 npm run dev
-
-# Build the project
-npm run build
-
-# Test the project
-npm run test
 ```
 
-## Testing
+### Available Scripts
 
-ElizaOS provides a comprehensive testing structure for projects:
+- `bun run build` - Build all plugins and main project
+- `bun run start` - Start the application
+- `bun run dev` - Start in development mode with auto-reload
+- `bun run docker:build` - Build Docker image
+- `bun run docker:run` - Run Docker container
 
-### Test Structure
+---
 
-- **Component Tests** (`__tests__/` directory):
+## 🐳 Docker Deployment (Alternative)
 
-  - **Unit Tests**: Test individual functions and components in isolation
-  - **Integration Tests**: Test how components work together
-  - Run with: `npm run test:component`
+If you prefer Docker:
 
-- **End-to-End Tests** (`e2e/` directory):
+```bash
+# Build and run with Docker
+bun run docker:build
+bun run docker:run
 
-  - Test the project within a full ElizaOS runtime
-  - Run with: `npm run test:e2e`
-
-- **Running All Tests**:
-  - `npm run test` runs both component and e2e tests
-
-### Writing Tests
-
-Component tests use Vitest:
-
-```typescript
-// Unit test example (__tests__/config.test.ts)
-describe('Configuration', () => {
-  it('should load configuration correctly', () => {
-    expect(config.debug).toBeDefined();
-  });
-});
-
-// Integration test example (__tests__/integration.test.ts)
-describe('Integration: Plugin with Character', () => {
-  it('should initialize character with plugins', async () => {
-    // Test interactions between components
-  });
-});
+# Or using docker-compose
+docker-compose up -d --build
 ```
 
-E2E tests use ElizaOS test interface:
-
-```typescript
-// E2E test example (e2e/project.test.ts)
-export class ProjectTestSuite implements TestSuite {
-  name = 'project_test_suite';
-  tests = [
-    {
-      name: 'project_initialization',
-      fn: async (runtime) => {
-        // Test project in a real runtime
-      },
-    },
-  ];
-}
-
-export default new ProjectTestSuite();
-```
-
-The test utilities in `__tests__/utils/` provide helper functions to simplify writing tests.
-
-## Configuration
-
-Customize your project by modifying:
-
-- `src/index.ts` - Main entry point
-- `src/character.ts` - Character definition
-- `src/plugin.ts` - Plugin configuration
-
-## 🎯 Usage
-
-Once running, Navi can help with:
-- Creating SDL (Stack Definition Language) files for Akash deployments
-- Troubleshooting deployment issues
-- Provider selection and optimization
-- GPU deployment guidance
-- Persistent storage configuration
-- Cost optimization strategies
-- Latest Akash Network updates and announcements
+---
 
 ## 📁 Project Structure
 
 ```
-navi/
+navi-akash/
 ├── plugins/                  # Plugin directories
 │   ├── plugin-akash-chat/    # Akash Network functionality
 │   ├── plugin-discord/       # Discord integration
 │   ├── plugin-knowledge/     # Knowledge base
 │   └── plugin-web-search/    # Web search capabilities
 ├── src/                      # Main application code
-│   └── index.ts              # Main agent definition
+│   ├── index.ts              # Main entry point
+│   ├── plugin.ts             # Plugin configuration
+│   ├── lib/                  # Shared libraries
+│   ├── types/                # TypeScript types
+│   └── utils/                # Utility functions
 ├── data/                     # Data storage
-│   └── akash-knowledge-base/ # Akash documentation
-└── .env                      # Environment configuration
+│   └── akash-knowledge-base/ # Knowledge base data
+├── dist/                     # Built output
+├── .env.example              # Environment template
+├── package.json              # Dependencies and scripts
+├── tsconfig.json             # TypeScript configuration
+├── docker-compose.yml        # Docker Compose configuration
+└── Dockerfile                # Docker image configuration
 ```
 
-## 🔧 Development
+---
 
-### Development Mode
-```bash
-npm run dev
-# or
-bun run dev
-```
+## 🔗 API Key Sources
 
-### Available Scripts
-- `npm run build` - Build the application
-- `npm run start` - Start the application
-- `npm run dev` - Start in development mode
-- `npm run test` - Run tests
-- `npm run lint` - Format code with Prettier
+| Service | URL | Purpose | Required |
+|---------|-----|---------|----------|
+| Discord Developer Portal | [discord.com/developers/applications](https://discord.com/developers/applications) | Bot integration | ✅ Yes |
+| Akash Chat API | [chatapi.akash.network](https://chatapi.akash.network) | AI chat functionality | ✅ Yes |
+| Tavily | [tavily.com](https://tavily.com) | Web search | ✅ Yes |
+| GitHub | [github.com/settings/tokens](https://github.com/settings/tokens) | Enhanced search | ❌ Optional |
 
-## 🐛 Troubleshooting
+---
+
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **Missing API Keys**
-   - Ensure all required API keys are set in `.env`
-   - Check that Discord bot has proper permissions
+1. **Permission Error with Scripts**
+   ```bash
+   # Make sure you have the correct permissions
+   bun run build
+   ```
 
-2. **Discord Bot Not Responding**
-   - Verify Discord token and application ID
-   - Ensure bot has proper permissions in Discord server
-   - Check logs for connection errors
+2. **Missing .env File**
+   ```bash
+   cp .env.example .env
+   ```
 
 3. **Build Errors**
-   - Run `npm install` or `bun install` to ensure dependencies are installed
-   - Check that all required plugins are available
+   ```bash
+   bun install
+   rm -rf dist node_modules/.cache
+   bun run build
+   ```
+
+4. **Bot Not Responding**
+   - Check Discord token and application ID
+   - Ensure bot has proper permissions in Discord server
+   - Check logs: `bun run dev` (development mode with logs)
 
 ### Logs and Debugging
 
 ```bash
 # Check logs in development
-npm run dev
+bun run dev
 
-# Check for any configuration issues
-npm run start
+# Check Docker logs (if using Docker)
+docker logs navi-akash-bot
+
+# Clean and rebuild everything
+rm -rf dist node_modules/.cache && bun run build
 ```
 
-## 🔑 API Key Sources
+---
 
-### Discord Configuration
-Get your Discord credentials from [Discord Developer Portal](https://discord.com/developers/applications):
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Click "New Application" and give it a name
-3. Go to "Bot" section and click "Add Bot"
-4. Copy the **Token** for `DISCORD_API_TOKEN`
-5. Go to "General Information" and copy **Application ID** for `DISCORD_APPLICATION_ID`
+## 📝 Environment Variables Reference
 
-### Akash Chat API
-Get your API key from [Akash Chat API](https://chatapi.akash.network)
+See `.env.example` for a complete template.
 
-### Tavily API
-Get your API key from [Tavily](https://tavily.com) for web search functionality
+---
+
+## 📄 Akash SDL Deployment Example
+
+To deploy Navi-Akash on Akash Network, use the following SDL file (`deploy.yaml`):
+
+```yaml
+---
+version: "2.0"
+
+services:
+  navi:
+    image: registry.gitlab.com/fenil00/navi:v1.0
+    expose:
+      - port: 3000
+        as: 3000
+        to:
+          - global: true
+        http_options:
+          max_body_size: 10485760  # 10MB
+      - port: 50000
+        as: 50000
+        proto: udp
+        to:
+          - global: true
+      - port: 50001
+        as: 50001
+        proto: udp
+        to:
+          - global: true
+      - port: 50002
+        as: 50002
+        proto: udp
+        to:
+          - global: true
+      - port: 50003
+        as: 50003
+        proto: udp
+        to:
+          - global: true
+      - port: 50004
+        as: 50004
+        proto: udp
+        to:
+          - global: true
+    env:
+      - AKASH_CHAT_API_KEY=
+      - AKASH_CHAT_SMALL_MODEL=DeepSeek-R1-0528
+      - AKASH_CHAT_LARGE_MODEL=Meta-Llama-3-2-3B-Instruct
+      - AKASH_CHAT_BASE_URL=https://chatapi.akash.network/api/v1
+      - OPENAI_BASE_URL=https://chatapi.akash.network/api/v1
+      - OPENAI_API_KEY=
+      - TAVILY_API_KEY=
+      - DISCORD_APPLICATION_ID=
+      - DISCORD_API_TOKEN=
+      - DISCORD_INTENTS=Guilds,GuildMessages,MessageContent,GuildMembers
+      - DISCORD_ALLOWED_DMS=true
+      - DISCORD_ENABLE_WEB_SEARCH=true
+      - CTX_KNOWLEDGE_ENABLED=false
+      - LOAD_DOCS_ON_STARTUP=true
+      - EMBEDDING_PROVIDER=akash
+      - TEXT_EMBEDDING_MODEL=BAAI-bge-large-en-v1-5
+      - EMBEDDING_DIMENSION=1024
+      - MAX_CONCURRENT_REQUESTS=50
+      - REQUESTS_PER_MINUTE=300
+      - TOKENS_PER_MINUTE=200000
+      - DOCS_REPO_1_URL=https://github.com/fenilmodi00/akash-knowledge-base.git
+      - DOCS_REPO_1_PATH=./data/akash-knowledge-base
+      - DOCS_REPO_1_BRANCH=main
+      - NODE_ENV=production
+      - LOG_LEVEL=debug
+    params:
+      storage:
+        data:
+          mount: /app/data
+          readOnly: false
+        logs:
+          mount: /app/logs
+          readOnly: false
+
+profiles:
+  compute:
+    navi:
+      resources:
+        cpu:
+          units: 2
+        memory:
+          size: 2Gi
+        storage:
+          - size: 8Gi
+          - name: data
+            size: 10Gi
+            attributes:
+              persistent: true
+              class: beta3
+          - name: logs
+            size: 2Gi
+            attributes:
+              persistent: true
+              class: beta3
+  placement:
+    dcloud:
+      pricing:
+        navi:
+          denom: uakt
+          amount: 100000
+
+deployment:
+  navi:
+    dcloud:
+      profile: navi
+      count: 1
+```
+
+---
 
 ## 🤝 Contributing
 
@@ -248,12 +407,32 @@ Get your API key from [Tavily](https://tavily.com) for web search functionality
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+---
+
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+---
 
-- [ElizaOS](https://github.com/elizaOS/eliza) - The AI agent framework
-- [Akash Network](https://akash.network/) - The decentralized cloud platform
-- Original [navi-akash](https://github.com/fenilmodi00/navi-akash) project by [Fenil Modi](https://github.com/fenilmodi00)
+## 💡 Quick Commands Summary
+
+```bash
+# Complete setup (one command)
+git clone https://github.com/fenilmodi00/navi-akash.git && cd navi-akash && bun install && bun run build && bun run start
+
+# Just build
+bun run build
+
+# Just start  
+bun run start
+
+# Development mode
+bun run dev
+
+# Clean and rebuild
+rm -rf dist node_modules/.cache && bun run build
+
+# Docker deployment
+bun run docker:build && bun run docker:run
+```
