@@ -1,7 +1,7 @@
-# Production optimized Dockerfile following ElizaOS framework structure
+# Railway-optimized Dockerfile for Akash Navi
 FROM oven/bun:1.1-alpine AS base
 
-# Install system dependencies for native modules and runtime
+# Install system dependencies
 RUN apk add --no-cache \
     build-base \
     curl \
@@ -20,34 +20,52 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Builder stage - install all dependencies and build
+# Builder stage
 FROM base AS builder
 
-# Copy workspace configuration files first for better layer caching
+# Copy package files for dependency resolution
 COPY package.json bun.lock bunfig.toml ./
-COPY tsconfig.json ./
+COPY tsconfig*.json ./
 
-# Copy plugin package.json files for workspace dependency resolution
+# Copy all plugin configuration files
 COPY plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
-COPY plugins/plugin-discord/package.json ./plugins/plugin-discord/
-COPY plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
-COPY plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
+COPY plugins/plugin-akash-chat/tsconfig*.json ./plugins/plugin-akash-chat/
+COPY plugins/plugin-akash-chat/tsup.config.ts ./plugins/plugin-akash-chat/
 
-# Install all dependencies (including devDependencies for build)
+COPY plugins/plugin-discord/package.json ./plugins/plugin-discord/
+COPY plugins/plugin-discord/tsconfig*.json ./plugins/plugin-discord/
+COPY plugins/plugin-discord/tsup.config.ts ./plugins/plugin-discord/
+
+COPY plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
+COPY plugins/plugin-knowledge/tsconfig*.json ./plugins/plugin-knowledge/
+COPY plugins/plugin-knowledge/tsup.config.ts ./plugins/plugin-knowledge/
+COPY plugins/plugin-knowledge/vite.config.ts ./plugins/plugin-knowledge/
+COPY plugins/plugin-knowledge/postcss.config.js ./plugins/plugin-knowledge/
+COPY plugins/plugin-knowledge/tailwind.config.js ./plugins/plugin-knowledge/
+COPY plugins/plugin-knowledge/index.html ./plugins/plugin-knowledge/
+
+COPY plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
+COPY plugins/plugin-web-search/tsconfig*.json ./plugins/plugin-web-search/
+COPY plugins/plugin-web-search/tsup.config.ts ./plugins/plugin-web-search/
+
+# Copy main tsup config
+COPY tsup.config.ts ./
+
+# Install all dependencies
 RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY src ./src
 COPY plugins ./plugins
 
-# Build all plugins and main app
+# Build the application
 RUN bun run build
 
-# Production runtime stage
+# Production stage
 FROM oven/bun:1.1-alpine AS runner
 WORKDIR /app
 
-# Install only runtime dependencies (no build tools)
+# Install runtime dependencies only
 RUN apk add --no-cache \
     dumb-init \
     curl \
@@ -56,43 +74,48 @@ RUN apk add --no-cache \
     python3 \
     unzip
 
-# Create non-root user (following ElizaOS naming convention)
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 eliza
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 eliza
 
-# Copy package.json and workspace configuration for runtime
+# Copy package files for production install
 COPY --from=builder --chown=eliza:nodejs /app/package.json ./
 COPY --from=builder --chown=eliza:nodejs /app/bunfig.toml ./
 
-# Copy plugin package.json files for workspace resolution
+# Copy plugin package.json files
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/package.json ./plugins/plugin-discord/
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
 
-# Install only production dependencies in runtime
+# Install production dependencies
 RUN bun install --frozen-lockfile --production
 
-# Copy built assets from builder
+# Copy built application
 COPY --from=builder --chown=eliza:nodejs /app/dist ./dist
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-akash-chat/dist ./plugins/plugin-akash-chat/dist
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/dist ./plugins/plugin-discord/dist
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/dist ./plugins/plugin-knowledge/dist
 COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/dist ./plugins/plugin-web-search/dist
 
+# Copy any additional assets needed by knowledge plugin
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/.vite ./plugins/plugin-knowledge/.vite
+
+# Switch to non-root user
 USER eliza
 
-EXPOSE 3000
-EXPOSE 50000-50100/udp
-
+# Railway uses PORT environment variable - set fallback
 ENV NODE_ENV=production
-ENV PORT=3000
 ENV BUN_ENV=production
+ENV PORT=${PORT:-3000}
 
-# Health check
+# Expose the port
+EXPOSE $PORT
+
+# Health check for Railway
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:$PORT/health || exit 1
 
-# Use dumb-init for proper signal handling (following ElizaOS pattern)
+# Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["bun", "start"]

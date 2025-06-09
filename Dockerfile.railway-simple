@@ -1,0 +1,54 @@
+# Simplified Railway Dockerfile for Akash Navi
+FROM oven/bun:1.1-alpine
+
+# Install required system dependencies
+RUN apk add --no-cache \
+    curl \
+    ffmpeg \
+    git \
+    python3 \
+    dumb-init
+
+WORKDIR /app
+
+# Copy all package files and configs first
+COPY package.json bun.lock bunfig.toml tsconfig*.json tsup.config.ts ./
+
+# Copy plugin configurations
+COPY plugins/plugin-akash-chat/package.json plugins/plugin-akash-chat/tsconfig*.json plugins/plugin-akash-chat/tsup.config.ts ./plugins/plugin-akash-chat/
+COPY plugins/plugin-discord/package.json plugins/plugin-discord/tsconfig*.json plugins/plugin-discord/tsup.config.ts ./plugins/plugin-discord/
+COPY plugins/plugin-knowledge/package.json plugins/plugin-knowledge/tsconfig*.json plugins/plugin-knowledge/tsup.config.ts plugins/plugin-knowledge/vite.config.ts plugins/plugin-knowledge/postcss.config.js plugins/plugin-knowledge/tailwind.config.js plugins/plugin-knowledge/index.html ./plugins/plugin-knowledge/
+COPY plugins/plugin-web-search/package.json plugins/plugin-web-search/tsconfig*.json plugins/plugin-web-search/tsup.config.ts ./plugins/plugin-web-search/
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Copy source code
+COPY src ./src
+COPY plugins ./plugins
+
+# Build the application
+RUN bun run build
+
+# Install only production dependencies
+RUN bun install --frozen-lockfile --production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 eliza
+
+# Change ownership of app directory
+RUN chown -R eliza:nodejs /app
+
+USER eliza
+
+# Railway sets PORT environment variable dynamically
+ENV NODE_ENV=production
+ENV BUN_ENV=production
+
+# Expose port (Railway will set this)
+EXPOSE 3000
+
+# Start the application
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["bun", "start"]
