@@ -9,6 +9,7 @@ RUN apk add --no-cache \
     git \
     make \
     python3 \
+    py3-pip \
     g++ \
     pkgconfig \
     cairo-dev \
@@ -16,7 +17,18 @@ RUN apk add --no-cache \
     jpeg-dev \
     giflib-dev \
     librsvg-dev \
-    unzip
+    unzip \
+    libc6-compat \
+    libstdc++ \
+    opus-dev \
+    libsodium-dev
+
+# Create python symlink for node-gyp
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+# Set Python environment for node-gyp
+ENV PYTHON=/usr/bin/python3
+ENV npm_config_python=/usr/bin/python3
 
 WORKDIR /app
 
@@ -52,6 +64,7 @@ COPY plugins/plugin-web-search/tsup.config.ts ./plugins/plugin-web-search/
 COPY tsup.config.ts ./
 
 # Install all dependencies
+RUN npm config set python /usr/bin/python3
 RUN bun install --frozen-lockfile
 
 # Copy source code
@@ -72,7 +85,12 @@ RUN apk add --no-cache \
     ffmpeg \
     git \
     python3 \
-    unzip
+    unzip \
+    opus \
+    libsodium
+
+# Create python symlink for runtime
+RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
