@@ -1,46 +1,98 @@
-# Multi-stage build for smaller image using Bun
+# Production optimized Dockerfile following ElizaOS framework structure
 FROM oven/bun:1.1-alpine AS base
 
-# Install dependencies needed for native modules
-RUN apk add --no-cache python3 make g++ pkgconfig cairo-dev pango-dev
+# Install system dependencies for native modules and runtime
+RUN apk add --no-cache \
+    build-base \
+    curl \
+    ffmpeg \
+    git \
+    make \
+    python3 \
+    g++ \
+    pkgconfig \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    librsvg-dev \
+    unzip
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json bun.lockb bunfig.toml ./
-COPY plugins/*/package.json ./plugins/*/
-
-# Install dependencies
-FROM base AS deps
-RUN bun install --frozen-lockfile --production
-
-# Build stage
+# Builder stage - install all dependencies and build
 FROM base AS builder
-COPY . .
+
+# Copy workspace configuration files first for better layer caching
+COPY package.json bun.lock bunfig.toml ./
+COPY tsconfig.json ./
+
+# Copy plugin package.json files for workspace dependency resolution
+COPY plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
+COPY plugins/plugin-discord/package.json ./plugins/plugin-discord/
+COPY plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
+COPY plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
+
+# Install all dependencies (including devDependencies for build)
 RUN bun install --frozen-lockfile
+
+# Copy source code
+COPY src ./src
+COPY plugins ./plugins
+
+# Build all plugins and main app
 RUN bun run build
 
-# Production stage
+# Production runtime stage
 FROM oven/bun:1.1-alpine AS runner
 WORKDIR /app
 
-# Create non-root user
+# Install only runtime dependencies (no build tools)
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    ffmpeg \
+    git \
+    python3 \
+    unzip
+
+# Create non-root user (following ElizaOS naming convention)
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN adduser --system --uid 1001 eliza
 
-# Copy built application
-COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+# Copy package.json and workspace configuration for runtime
+COPY --from=builder --chown=eliza:nodejs /app/package.json ./
+COPY --from=builder --chown=eliza:nodejs /app/bunfig.toml ./
 
-# Don't copy data folder - use external storage or volume mount
-# COPY --from=builder /app/data ./data
+# Copy plugin package.json files for workspace resolution
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/package.json ./plugins/plugin-discord/
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
 
-USER nextjs
+# Install only production dependencies in runtime
+RUN bun install --frozen-lockfile --production
+
+# Copy built assets from builder
+COPY --from=builder --chown=eliza:nodejs /app/dist ./dist
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-akash-chat/dist ./plugins/plugin-akash-chat/dist
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/dist ./plugins/plugin-discord/dist
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/dist ./plugins/plugin-knowledge/dist
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/dist ./plugins/plugin-web-search/dist
+
+USER eliza
 
 EXPOSE 3000
+EXPOSE 50000-50100/udp
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV BUN_ENV=production
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Use dumb-init for proper signal handling (following ElizaOS pattern)
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["bun", "start"]

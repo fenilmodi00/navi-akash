@@ -1,36 +1,44 @@
-# Production optimized Dockerfile for Bun workspace
+# Production optimized Dockerfile following ElizaOS framework structure
 FROM oven/bun:1.1-alpine AS base
 
-# Install system dependencies for native modules
+# Install system dependencies for native modules and runtime
 RUN apk add --no-cache \
-    python3 \
+    build-base \
+    curl \
+    ffmpeg \
+    git \
     make \
+    python3 \
     g++ \
     pkgconfig \
     cairo-dev \
     pango-dev \
     jpeg-dev \
     giflib-dev \
-    librsvg-dev
+    librsvg-dev \
+    unzip
 
 WORKDIR /app
 
-# Copy workspace configuration
-COPY package.json bun.lockb ./
-COPY plugins/*/package.json ./plugins/*/
+# Builder stage - install all dependencies and build
+FROM base AS builder
+
+# Copy workspace configuration files first for better layer caching
+COPY package.json bun.lock bunfig.toml ./
+COPY tsconfig.json ./
+
+# Copy plugin package.json files for workspace dependency resolution
+COPY plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
+COPY plugins/plugin-discord/package.json ./plugins/plugin-discord/
+COPY plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
+COPY plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
 
 # Install all dependencies (including devDependencies for build)
-FROM base AS deps-all
 RUN bun install --frozen-lockfile
 
-# Install only production dependencies  
-FROM base AS deps-prod
-RUN bun install --frozen-lockfile --production
-
-# Build stage
-FROM base AS builder
-COPY --from=deps-all /app/node_modules ./node_modules
-COPY . .
+# Copy source code
+COPY src ./src
+COPY plugins ./plugins
 
 # Build all plugins and main app
 RUN bun run build
@@ -39,33 +47,52 @@ RUN bun run build
 FROM oven/bun:1.1-alpine AS runner
 WORKDIR /app
 
-# Install only runtime dependencies
-RUN apk add --no-cache dumb-init
+# Install only runtime dependencies (no build tools)
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    ffmpeg \
+    git \
+    python3 \
+    unzip
 
-# Create non-root user
+# Create non-root user (following ElizaOS naming convention)
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN adduser --system --uid 1001 eliza
 
-# Copy production node_modules and built assets
-COPY --from=deps-prod --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nextjs:nodejs /app/plugins/*/dist ./plugins/*/dist
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+# Copy package.json and workspace configuration for runtime
+COPY --from=builder --chown=eliza:nodejs /app/package.json ./
+COPY --from=builder --chown=eliza:nodejs /app/bunfig.toml ./
 
 # Copy plugin package.json files for workspace resolution
-COPY --from=builder --chown=nextjs:nodejs /app/plugins/*/package.json ./plugins/*/package.json
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-akash-chat/package.json ./plugins/plugin-akash-chat/
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/package.json ./plugins/plugin-discord/
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/package.json ./plugins/plugin-knowledge/
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/package.json ./plugins/plugin-web-search/
 
-# Don't copy data - use external storage
-# COPY --from=builder /app/data ./data
+# Install only production dependencies in runtime
+RUN bun install --frozen-lockfile --production
 
-USER nextjs
+# Copy built assets from builder
+COPY --from=builder --chown=eliza:nodejs /app/dist ./dist
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-akash-chat/dist ./plugins/plugin-akash-chat/dist
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-discord/dist ./plugins/plugin-discord/dist
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-knowledge/dist ./plugins/plugin-knowledge/dist
+COPY --from=builder --chown=eliza:nodejs /app/plugins/plugin-web-search/dist ./plugins/plugin-web-search/dist
+
+USER eliza
 
 EXPOSE 3000
+EXPOSE 50000-50100/udp
 
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV BUN_ENV=production
 
-# Use dumb-init for proper signal handling
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Use dumb-init for proper signal handling (following ElizaOS pattern)
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["bun", "start"]
