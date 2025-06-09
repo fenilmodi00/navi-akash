@@ -12,6 +12,9 @@ node_modules
 /data/
 /elizadb/
 
+dockerfile
+dockerfile.production
+
 .eliza/
 .elizadb/
 
