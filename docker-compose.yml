@@ -1,0 +1,56 @@
+# Docker Compose for microservices approach
+version: '3.8'
+
+services:
+  # Main application (lighter)
+  akash-navi:
+    build: 
+      context: .
+      dockerfile: Dockerfile.main
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - KNOWLEDGE_SERVICE_URL=http://knowledge-service:4000
+      - DISCORD_SERVICE_URL=http://discord-service:5000
+    volumes:
+      - data:/app/data
+    depends_on:
+      - knowledge-service
+      - discord-service
+
+  # Knowledge plugin as separate service
+  knowledge-service:
+    build:
+      context: ./plugins/plugin-knowledge
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    volumes:
+      - data:/app/data
+    environment:
+      - NODE_ENV=production
+
+  # Discord plugin as separate service  
+  discord-service:
+    build:
+      context: ./plugins/plugin-discord
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+
+  # External data storage
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: akash_navi
+      POSTGRES_USER: navi
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  data:
+  postgres_data:

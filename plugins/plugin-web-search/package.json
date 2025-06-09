@@ -1,5 +1,5 @@
 {
-    "name": "@elizaos-plugins/plugin-web-search",
+    "name": "@elizaos/plugin-web-search",
     "version": "0.1.9",
     "type": "module",
     "main": "dist/index.js",
@@ -19,11 +19,14 @@
         "dist"
     ],
     "dependencies": {
-        "@elizaos/plugin-bootstrap": "^1.0.0-beta.76",
-        "@elizaos/plugin-knowledge": "^1.0.0-beta.77",
+        "@elizaos/plugin-bootstrap": "workspace:*",
+        "@elizaos/plugin-knowledge": "workspace:*",
         "@tavily/core": "^0.0.2",
-        "js-tiktoken": "1.0.15",
-        "tsup": "8.3.5"
+        "js-tiktoken": "workspace:*",
+        "tsup": "workspace:*",
+        "zod": "workspace:*",
+        "typescript": "workspace:*",
+        "prettier": "workspace:*"
     },
     "devDependencies": {
         "@biomejs/biome": "1.5.3"

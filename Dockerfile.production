@@ -1,0 +1,71 @@
+# Production optimized Dockerfile for Bun workspace
+FROM oven/bun:1.1-alpine AS base
+
+# Install system dependencies for native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    pkgconfig \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    librsvg-dev
+
+WORKDIR /app
+
+# Copy workspace configuration
+COPY package.json bun.lockb ./
+COPY plugins/*/package.json ./plugins/*/
+
+# Install all dependencies (including devDependencies for build)
+FROM base AS deps-all
+RUN bun install --frozen-lockfile
+
+# Install only production dependencies  
+FROM base AS deps-prod
+RUN bun install --frozen-lockfile --production
+
+# Build stage
+FROM base AS builder
+COPY --from=deps-all /app/node_modules ./node_modules
+COPY . .
+
+# Build all plugins and main app
+RUN bun run build
+
+# Production runtime stage
+FROM oven/bun:1.1-alpine AS runner
+WORKDIR /app
+
+# Install only runtime dependencies
+RUN apk add --no-cache dumb-init
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy production node_modules and built assets
+COPY --from=deps-prod --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nextjs:nodejs /app/plugins/*/dist ./plugins/*/dist
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Copy plugin package.json files for workspace resolution
+COPY --from=builder --chown=nextjs:nodejs /app/plugins/*/package.json ./plugins/*/package.json
+
+# Don't copy data - use external storage
+# COPY --from=builder /app/data ./data
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV BUN_ENV=production
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["bun", "start"]
